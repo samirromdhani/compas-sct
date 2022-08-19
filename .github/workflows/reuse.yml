@@ -4,7 +4,10 @@
 
 name: REUSE Compliance Check
 
-on: push
+on:
+  push:
+    branches:
+      - '!feat/docs'
 
 jobs:
   test:

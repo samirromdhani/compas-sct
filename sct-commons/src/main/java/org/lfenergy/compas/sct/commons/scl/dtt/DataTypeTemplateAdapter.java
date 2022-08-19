@@ -104,7 +104,6 @@ public class DataTypeTemplateAdapter extends SclElementAdapter<SclRootAdapter, T
     /**
      * import enum type from this DTT adapter from provider DTT adapter
      * @param prvDttAdapter Adapter of the Data Type template that provides its DTT
-     * @return map of (old enumId, new enumId)
      */
     public void importEnumType(String thisIEDName, DataTypeTemplateAdapter prvDttAdapter){
 

@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2022 RTE FRANCE -->
+<!-- -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 ## Description of SCD file generation from SSD file and a set of STD files
 
 ### Table Of Contents

@@ -4,7 +4,10 @@
 
 name: SonarCloud Analysis
 
-on: push
+on:
+  push:
+    branches:
+      - '!feat/docs'
 
 jobs:
   build:

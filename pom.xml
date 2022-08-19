@@ -100,7 +100,6 @@
         <module>sct-data</module>
         <module>sct-app</module>
     </modules>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -119,9 +118,21 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.22.2</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.4.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -138,6 +149,22 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <doctitle>CoMPAS SCT</doctitle>
+                    <encoding>UTF-8</encoding>
+                    <reportOutputDirectory>../docs/</reportOutputDirectory>
+                    <destDir>javadoc</destDir>
+                    <bottom>
+                        <![CDATA[Copyright &#169; 2022. All rights reserved.]]>
+                    </bottom>
+                    <sourceFileExcludes>
+                        <exclude>**/scl2007b4/**/*</exclude>
+                    </sourceFileExcludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>
