@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - '!feat/docs'
+      - '!fixes/docs'
+      -  '!feat/117_Documentation_SCD_Generation_Process'
 
 jobs:
   test:
