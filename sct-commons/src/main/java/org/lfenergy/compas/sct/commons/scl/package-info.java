@@ -7,7 +7,8 @@
  *      {@link org.lfenergy.compas.scl2007b4.model.THeader Header} ,
  *      {@link org.lfenergy.compas.scl2007b4.model.TSubstation Substation} ,
  *      {@link org.lfenergy.compas.scl2007b4.model.TCommunication Communication} ,
- *      {@link org.lfenergy.compas.scl2007b4.model.TIED IED} ,
+ *      {@link org.lfenergy.compas.scl2007b4.model.TIED IED1} ,
+ *      {@link org.lfenergy.compas.scl2007b4.model.TIED IED2} ,
  *      {@link org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates DataTypeTemplates} objects
  *  </h3>
  * @see org.lfenergy.compas.scl2007b4.model.SCL
