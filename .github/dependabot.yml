@@ -22,8 +22,8 @@ updates:
   # Maintain dependencies for Maven
   - package-ecosystem: "maven"
     directory: "/"
-    registries:
-      - maven-github
+    #registries:
+      #- maven-github
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
