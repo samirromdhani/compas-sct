@@ -4,12 +4,12 @@
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 version: 2
 
-registries:
-  maven-github:
-    type: maven-repository
-    url: https://maven.pkg.github.com/com-pas/*
-    username: OWNER
-    password: ${{ secrets.DB_GITHUB_PACKAGES }}
+#registries:
+#  maven-github:
+#    type: maven-repository
+#    url: https://maven.pkg.github.com/com-pas/*
+#    username: OWNER
+#    password: ${{ secrets.DB_GITHUB_PACKAGES }}
 
 updates:
   # Maintain dependencies for GitHub Actions
