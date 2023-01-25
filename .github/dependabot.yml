@@ -1,15 +1,15 @@
-# SPDX-FileCopyrightText: 2021 Alliander N.V.
+# SPDX-FileCopyrightText: 2023 RTE FRANCE
 #
 # SPDX-License-Identifier: Apache-2.0
 
 version: 2
 
-registries:
-  maven-github:
-    type: maven-repository
-    url: https://maven.pkg.github.com/com-pas/*
-    username: OWNER
-    password: ${{ secrets.DB_GITHUB_PACKAGES }}
+#registries:
+#  maven-github:
+#    type: maven-repository
+#    url: https://maven.pkg.github.com/com-pas/*
+#    username: OWNER
+#    password: ${{ secrets.DB_GITHUB_PACKAGES }}
 
 updates:
   # Maintain dependencies for GitHub Actions
@@ -22,8 +22,8 @@ updates:
   # Maintain dependencies for Maven
   - package-ecosystem: "maven"
     directory: "/"
-    registries:
-      - maven-github
+#    registries:
+#      - maven-github
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
