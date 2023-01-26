@@ -4,8 +4,8 @@
 name: Continuous Deployment - JavaDocs
 
 on:
-  pull_request:
-    types: [ labeled, closed ]
+  pull_request_review:
+    types: [ submitted ]
 
 jobs:
   build:
