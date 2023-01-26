@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation')
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == 'true' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation')
     name: Java Docs
     runs-on: ubuntu-latest
     env:
