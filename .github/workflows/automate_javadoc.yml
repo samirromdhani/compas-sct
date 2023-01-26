@@ -13,7 +13,6 @@ jobs:
     name: Java Docs
     runs-on: ubuntu-latest
     env:
-      dependabot_branch: dependabot/javadoc
       target_branch: develop
     steps:
       - name: Checkout
@@ -55,7 +54,7 @@ jobs:
           mvn -s custom_maven_settings.xml clean javadoc:aggregate -P javadoc
           mkdir -p docs/javadoc
           yes | cp -Rf target/site/apidocs/* docs/javadoc/
-          git checkout -b ${{ env.dependabot_branch }}/${ GITHUB_HEAD_REF }
+          git checkout -b ${{ env.dependabot_branch }}/${{ github.head_ref }}
 
       - name: Commit files
         run: |
@@ -67,14 +66,14 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ env.dependabot_branch }}/${ GITHUB_HEAD_REF }
+          branch: dependabot/javadoc-${{ github.head_ref }}
 
       # Note that will silently fail if PR already exists.
       - name: Create Pull Request
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: ${{ env.dependabot_branch }}/${ GITHUB_HEAD_REF }
+          source_branch: dependabot/javadoc/${{ github.head_ref }}
           destination_branch: ${{ env.target_branch }}
           pr_title: "Docs: Update Java docs repository"
           pr_body: "Automatically created from CI workflow"
