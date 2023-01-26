@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     # if: github.event.pull_request.merged && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation')
-    if: ${{ github.event.pull_request.merged && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
     name: Java Docs
     runs-on: ubuntu-latest
     env:
