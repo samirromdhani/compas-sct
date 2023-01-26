@@ -3,14 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0
 name: Continuous Deployment - JavaDocs
 
+# on:
+#   pull_request:
+#     types: [ labeled, closed ]
 on:
-  pull_request:
-    types: [ labeled, closed ]
-
+  push:
+    branches:
+      - 'fixes'
 jobs:
   build:
     # if: github.event.pull_request.merged && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation')
-    if: ${{ github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
+    # if: ${{ github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
     name: Java Docs
     runs-on: ubuntu-latest
     env:
@@ -29,7 +32,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          ref: ${{ env.ref_branch }}
+          # ref: ${{ env.ref_branch }}
 
       - name: Create custom Maven Settings.xml
         uses: whelk-io/maven-settings-xml-action@v21
@@ -59,7 +62,7 @@ jobs:
           git add docs/javadoc/
           git commit -m "[dependabot/javadoc]: update javadoc"
           git checkout gh-pages
-          git merge --no-commit --strategy-option theirs
+          git merge --no-commit --strategy-option theirs temp
           git switch ${{ env.from_branch }}
 
       # - name: Commit files
