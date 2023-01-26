@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '11'
 
       - name: Create custom Maven Settings.xml
         uses: whelk-io/maven-settings-xml-action@v21
@@ -49,7 +49,7 @@ jobs:
 
       - name: Prepare Pull Request branch
         run: |
-          mvn -s custom_maven_settings.xml clean javadoc:aggregate -Pjavadoc
+          mvn -s custom_maven_settings.xml clean javadoc:aggregate -P javadoc
           mkdir -p docs/javadoc
           yes | cp -Rf target/site/apidocs/* docs/javadoc/
           git checkout -b ${{ env.from_branch }}-pull-request
