@@ -63,7 +63,7 @@ jobs:
 
       # Note that will fail if branch already exists.
       - name: Push Git Branch
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: dependabot/javadoc-${{ github.event.pull_request.number }}
