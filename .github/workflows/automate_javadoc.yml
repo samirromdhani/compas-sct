@@ -56,16 +56,13 @@ jobs:
           git commit -m "[dependabot/javadoc/temp]: update javadoc"
           git fetch origin ${{ env.target_branch }}
           git checkout ${{ env.target_branch }}
+          git clean -fdx
           git checkout -b ${{ env.from_branch }}
           git config pull.rebase false
-          git merge --no-commit --strategy-option theirs temp --allow-unrelated-histories
-          git status
-          git reset -- . 
-          git status
-          git add docs/javadoc/
-          git status
-          git commit -a -m "[dependabot/javadoc]: update javadoc"
-
+          git cherry-pick -n -X theirs temp
+          git commit -m "[dependabot/javadoc]: update javadoc"
+      # git merge --no-commit --strategy-option theirs temp --allow-unrelated-histories
+    
       # - name: Commit files
       #   run: |
       #     git add docs/javadoc/
