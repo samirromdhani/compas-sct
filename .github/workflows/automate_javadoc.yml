@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ env.from_branch }}
       # Use develop as base branch to generate javadoc
       - name: Set up JDK 17
         uses: actions/setup-java@v3
