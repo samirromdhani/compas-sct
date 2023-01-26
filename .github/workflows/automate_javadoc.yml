@@ -15,6 +15,8 @@ jobs:
       from_branch: feat/javadoc
       target_branch: develop
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       # Use develop as base branch to generate javadoc
 #      - name: Setup Environment
 #        uses: actions/checkout@v3
@@ -27,7 +29,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          ref: ${{ env.from_branch }}
+#          ref: ${{ env.from_branch }}
 
       - name: Create custom Maven Settings.xml
         uses: whelk-io/maven-settings-xml-action@v21
