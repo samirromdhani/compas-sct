@@ -29,7 +29,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          # ref: ${{ env.ref_branch }}
+          ref: ${{ env.ref_branch }}
 
       - name: Create custom Maven Settings.xml
         uses: whelk-io/maven-settings-xml-action@v21
