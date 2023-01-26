@@ -3,14 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 name: Continuous Deployment - JavaDocs
 
+# on:
+#   pull_request:
+#     types: [ labeled, closed ]
 on:
-  pull_request:
-    types: [ labeled, closed ]
+  push:
+    branches:
+      - 'feat/test'
 
 jobs:
   build:
     # if: github.event.pull_request.merged && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation')
-    if: ${{ github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
+    # if: ${{ github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
     name: Java Docs
     runs-on: ubuntu-latest
     env:
@@ -20,16 +24,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          # ref: ${{ env.from_branch }}
-          ref: ${{ env.ref_branch }}
-      # Use develop as base branch to generate javadoc
-      - name: Setup Environment
-        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
-          ref: ${{ env.ref_branch }}
 
       - name: Create custom Maven Settings.xml
         uses: whelk-io/maven-settings-xml-action@v21
@@ -55,12 +55,13 @@ jobs:
           mvn -s custom_maven_settings.xml clean javadoc:aggregate -P javadoc
           mkdir -p docs/javadoc
           yes | cp -Rf target/site/apidocs/* docs/javadoc/
-          git switch temp
+          git checkout -b temp
           git add docs/javadoc/
           git commit -m "[dependabot/javadoc]: update javadoc"
-          git checkout gh-pages
+          git fetch origin ${{ env.target_branch }}
+          git checkout ${{ env.target_branch }}
           git merge --no-commit --strategy-option theirs
-          git switch ${{ env.from_branch }}
+          git checkout -b ${{ env.from_branch }}
 
       # - name: Commit files
       #   run: |
