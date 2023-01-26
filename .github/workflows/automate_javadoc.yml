@@ -13,15 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     env:
       from_branch: feat/javadoc
-      target_branch: feat/117_Documentation_SCD_Generation_Process
+      target_branch: develop
     steps:
-      # Use develop as base branch to generate javadoc
-      - name: Setup Environment
+      - name: Checkout
         uses: actions/checkout@v3
+      # Use develop as base branch to generate javadoc
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
-          ref: ${{ env.target_branch }}
+#      - name: Setup Environment
+#        uses: actions/checkout@v3
+#        with:
+#          distribution: 'zulu'
+#          java-version: '17'
+#          ref: ${{ env.from_branch }}
 
       - name: Create custom Maven Settings.xml
         uses: whelk-io/maven-settings-xml-action@v21
