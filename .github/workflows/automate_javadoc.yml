@@ -75,7 +75,7 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: dependabot/javadoc-{{ github.event.pull_request.number }}
+          source_branch: dependabot/javadoc-${{ github.event.pull_request.number }}
           destination_branch: ${{ env.target_branch }}
           pr_title: "Docs: Update Java docs repository"
           pr_body: "Automatically created from CI workflow"
