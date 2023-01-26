@@ -12,7 +12,7 @@ paginate:         5
 version:          0.1.0
 
 github:
-  repo:           https://github.com/samirromdhani/compas-sct
+  repo:           https://github.com/com-pas/compas-sct
 
 github_username:  com-pas
 git_repo:         compas-sct
