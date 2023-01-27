@@ -22,6 +22,9 @@ jobs:
           echo "pull_request.base.ref: ${{  github.event.pull_request.base.ref }}"
           echo "pull_request.merged: ${{ github.event.pull_request.merged }}"
           echo "github.event.label: ${{ github.event.label }}"
+          echo "toJSON github.event.label: ${{ toJSON(github.event.label) }}"
+          echo "toJSON github.event.pull_request.labels: ${{ toJSON(github.event.pull_request.labels) }}"
+          echo "contains(github.event.pull_request.labels.*.name, 'javadoc'): ${{ contains(github.event.pull_request.labels.*.name, 'javadoc') }}"
       - name: Checkout
         if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         uses: actions/checkout@v3
