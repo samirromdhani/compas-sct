@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
     name: Java Docs
     runs-on: ubuntu-latest
     env:
