@@ -9,29 +9,39 @@ on:
 
 jobs:
   build:
-    if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
+#    if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
     name: Java Docs
     runs-on: ubuntu-latest
     env:
       DEPLOYMENT_BRANCH: gh-pages
       DEPENDABOT_BRANCH: dependabot/javadoc-${{ github.head_ref || github.ref_name }}-${{ github.event.pull_request.number }}
     steps:
+      - name: Tests Logs
+        run: |
+          echo "github.actor: ${{  github.actor }}"
+          echo "pull_request.base.ref: ${{  github.event.pull_request.base.ref }}"
+          echo "pull_request.merged: ${{ github.event.pull_request.merged }}"
+          echo "github.event.label: ${{ github.event.label }}"
       - name: Checkout
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         uses: actions/checkout@v3
 
       - name: Set up JDK 17
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
 
       - name: Create custom Maven Settings.xml
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         uses: whelk-io/maven-settings-xml-action@v21
         with:
           output_file: custom_maven_settings.xml
           servers: '[{ "id": "github-packages-compas", "username": "OWNER", "password": "${{ secrets.GITHUB_TOKEN }}" }]'
 
       - name: Configure Git
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         run: |
           git config --global user.name '${{ secrets.CONFIG_CI_USER_NAME }}'
           git config --global user.email '${{ secrets.CONFIG_CI_USER_EMAIL }}'
@@ -39,6 +49,7 @@ jobs:
           git fetch origin ${{ env.DEPLOYMENT_BRANCH }}
 
       - name: Import GPG key
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v5
         with:
@@ -48,6 +59,7 @@ jobs:
 
       # Take note that your GitHub Pages site is currently being built from the /docs folder in the DEPLOYMENT_BRANCH branch.
       - name: Prepare Pull Request branch & commit files
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         run: |
           mvn -s custom_maven_settings.xml clean javadoc:aggregate -P javadoc
           mkdir -p docs/javadoc
@@ -63,6 +75,7 @@ jobs:
 
       # Note that will fail if branch already exists.
       - name: Push Git Branch
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -70,6 +83,7 @@ jobs:
 
       # Note that will silently fail if PR already exists.
       - name: Create Pull Request
+        if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
