@@ -5,24 +5,18 @@ name: Continuous Deployment - JavaDocs
 
 on:
   pull_request:
-    types: [ labeled, synchronize, edited, closed ]
+    types: [ labeled, closed ]
 
 jobs:
   build:
-#    if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
+    if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && github.event.pull_request.merged && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
     name: Java Docs
     runs-on: ubuntu-latest
     env:
       DEPLOYMENT_BRANCH: gh-pages
       DEPENDABOT_BRANCH: dependabot/javadoc-${{ github.head_ref || github.ref_name }}-${{ github.event.pull_request.number }}
     steps:
-      - name: Tests
-        run: |
-          echo "github.actor: ${{  github.actor }}"
-          echo "pull_request.base.ref: ${{  github.event.pull_request.base.ref }}"
-          echo "pull_request.merged: ${{ github.event.pull_request.merged }}"
-      - if: ${{  github.event.pull_request.base.ref == 'develop' && github.actor != 'dependabot[bot]' && (github.event.label.name == 'javadoc' || github.event.label.name == 'documentation') }}
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Set up JDK 17
