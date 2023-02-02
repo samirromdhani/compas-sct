@@ -69,9 +69,7 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ env.DEPENDABOT_BRANCH }}
-
-
+          branch: ${{ env.DEPLOYMENT_BRANCH }}
 
       # Note that will silently fail if PR already exists.
 #      - name: Create Pull Request
