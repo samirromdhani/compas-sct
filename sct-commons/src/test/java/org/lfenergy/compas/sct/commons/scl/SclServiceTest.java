@@ -6,6 +6,7 @@ package org.lfenergy.compas.sct.commons.scl;
 
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -17,7 +18,13 @@ import org.lfenergy.compas.sct.commons.exception.ScdException;
 import org.lfenergy.compas.sct.commons.scl.ied.*;
 import org.lfenergy.compas.sct.commons.testhelpers.MarshallerWrapper;
 import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
+import org.lfenergy.compas.sct.commons.util.CsvUtils;
+import org.lfenergy.compas.sct.commons.util.RecordingSettingsCsvHelper;
+import org.lfenergy.compas.sct.commons.util.RecordingSettingsCsvHelperApacheWay;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1208,6 +1215,31 @@ class SclServiceTest {
                                 "There are too much GOOSE Control Blocks for the IED IED_NAME2: 3 > 2 max",
                                 "There are too much SMV Control Blocks for the IED IED_NAME2: 3 > 1 max");
     }
+
+    @Test
+    void readDisturbancesAndFaultsRecording_Apache_Way() throws IOException {
+        // Given
+        // When
+        String fileName = "LDEPF_Setting_file.csv";
+        RecordingSettingsCsvHelperApacheWay re = new RecordingSettingsCsvHelperApacheWay(fileName);
+        //Then
+        assertThat(re.getRecordings().size()).isEqualTo(161);
+    }
+
+    @Test
+    @Disabled
+    void readDisturbancesAndFaultsRecording_OpenCSV_Way() {
+        // Given
+        // When
+        String fileName = "LDEPF_Setting_file_OpenCSV.csv";
+        InputStream inputStream = Objects.requireNonNull(CsvUtils.class.getClassLoader().getResourceAsStream(fileName), "Resource not found: " + fileName);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        RecordingSettingsCsvHelper re = new RecordingSettingsCsvHelper(inputStreamReader);
+        //Then
+        assertThat(re.getRecordings().size()).isEqualTo(161);
+    }
+
+
 
 
 }
