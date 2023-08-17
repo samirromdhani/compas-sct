@@ -33,6 +33,6 @@ jobs:
         uses: whelk-io/maven-settings-xml-action@v21
         with:
           output_file: custom_maven_settings.xml
-          servers: '[{ "id": "github-packages-compas", "username": "OWNER", "password": "${{ secrets.GITHUB_TOKEN }}" }]'
+          servers: '[{ "id": "github-packages-compas", "username": "OWNER", "password": "${{ secrets.PERSONAL_TOKEN }}" }]'
       - name: Build with Maven
         run: mvn -s custom_maven_settings.xml -B clean verify
