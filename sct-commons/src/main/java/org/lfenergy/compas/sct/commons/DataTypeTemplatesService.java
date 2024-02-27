@@ -111,6 +111,70 @@ public class DataTypeTemplatesService {
                 .orElse(false);
     }
 
+
+    private TDOType findDOTypeBySdoName(TDataTypeTemplates dtt, TDOType tdoType, List<String> sdoNames) {
+        System.out.println(":: recDOTypeBySdoName start with  :: "+tdoType.getId());
+        if(sdoNames.isEmpty()) return tdoType;
+        return getDOTypeBySdoName(dtt, tdoType, sdoNames.get(0))
+                .map(tdoType1 -> {
+                    sdoNames.remove(0);
+                    System.out.println(":: DO Type found :: "+tdoType1.getId());
+                    return findDOTypeBySdoName(dtt, tdoType1, sdoNames);
+                })
+                .orElse(tdoType);
+    }
+
+    private void findDATypeByBdaName(TDataTypeTemplates dtt, TDAType tdaType, List<String> bdaNames, List<SclReportItem> sclReportItems) {
+        System.out.println(":: recDATypeByBdaName start with  :: "+tdaType.getId());
+        if(bdaNames.isEmpty()) return ;
+        getDATypeByBdaName(dtt, tdaType, bdaNames.get(0))
+                .ifPresentOrElse(tdaType1 -> {
+                    System.out.println(":: DA Type found :: "+tdaType1.getId());
+                    bdaNames.remove(0);
+                    findDATypeByBdaName(dtt, tdaType1, bdaNames, sclReportItems);
+                }, () -> {
+                    sclReportItems.add(SclReportItem.error(null,String.format("Unknown BDA.name (%s) in DAType.id (%s)",
+                       bdaNames.get(0), tdaType.getId())));
+                });
+    }
+
+    public List<SclReportItem> isDoObjectsAndDataAttributesExistsV11(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef) {
+        List<SclReportItem> sclReportItems = new ArrayList<>();
+        LinkedList<String> dataRefList = new LinkedList<>(Arrays.asList(dataRef.split("\\.")));
+        if (dataRefList.size() < 2) {
+            sclReportItems.add(SclReportItem.error(null, "Invalid data reference %s. At least DO name and DA name are required".formatted(dataRef)));
+        }
+        String doName = dataRefList.remove();
+        return lnodeTypeService.findLnodeType(dtt, lNodeType -> lNodeTypeId.equals(lNodeType.getId()))
+                .map(lNodeType -> doService.findDo(lNodeType, tdo -> tdo.getName().equals(doName))
+                        .map(tdo -> doTypeService.findDoType(dtt, doType -> doType.getId().equals(tdo.getType()))
+                                .map(tdoType -> {
+                                    TDOType lastDoType = findDOTypeBySdoName(dtt, tdoType, dataRefList);
+                                    Optional<TDAType> tdaType = getDATypeByDaName(dtt, lastDoType, dataRefList.get(0));
+                                    tdaType.ifPresentOrElse(tdaType1 -> {
+                                        System.out.println(":: DA Type found :: "+tdaType1.getId());
+                                        dataRefList.remove();
+                                        findDATypeByBdaName(dtt, tdaType1, dataRefList, sclReportItems);
+                                    }, ()-> sclReportItems.add(SclReportItem.error(null,
+                                            String.format("Unknown Sub Data Object SDO or Data Attribute DA (%s) in DOType.id (%s)",
+                                                    dataRefList.get(0), lastDoType.getId()))));
+                                    return sclReportItems;
+                                })
+                                .orElseGet(() -> {
+                                    sclReportItems.add(SclReportItem.error(null, String.format("DOType.id (%s) for DO.name (%s) not found in DataTypeTemplates", tdo.getType(), tdo.getName())));
+                                    return sclReportItems;
+                                }))
+                        .orElseGet(() -> {
+                            sclReportItems.add(SclReportItem.error(null, String.format("Unknown DO.name (%s) in DOType.id (%s)", doName, lNodeTypeId)));
+                            return sclReportItems;
+                        }))
+                .orElseGet(() -> {
+                    sclReportItems.add(SclReportItem.error(null, "No Data Attribute found with this reference %s for LNodeType.id (%s)".formatted(dataRef, lNodeTypeId)));
+                    return sclReportItems;
+                });
+    }
+
+
     public List<SclReportItem> isDoObjectsAndDataAttributesExists(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef) {
         List<SclReportItem> sclReportItems = new ArrayList<>();
         LinkedList<String> dataRefList = new LinkedList<>(Arrays.asList(dataRef.split("\\.")));
