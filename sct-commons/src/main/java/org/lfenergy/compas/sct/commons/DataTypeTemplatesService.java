@@ -189,6 +189,13 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
                 .orElseThrow(() -> new ScdException("No Data Attribute found with this reference %s for LNodeType.id (%s)".formatted(dataRef, lNodeTypeId)));
     }
 
+    @Override
+    public List<DataAttributeRef> getAllDataObjectsAndDataAttributes(TDataTypeTemplates dtt) {
+        return dtt.getLNodeType().stream()
+                .flatMap(tlNodeType -> lnodeTypeService.getDataAttributeRefs(dtt, tlNodeType).stream())
+                .toList();
+    }
+
     private <T extends TIDNaming> Optional<T> getDATypeByDaNameIfExist(TDataTypeTemplates dtt, TDOType tdoType, String daName) {
         Optional<TDA> dai = sdoOrDAService.findSDOOrDA(tdoType, TDA.class, tda -> tda.getName().equals(daName));
         if(dai.isPresent()){

@@ -10,14 +10,13 @@ import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
 import org.lfenergy.compas.sct.commons.dto.SclReportItem;
-import org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateAdapter;
+import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
-import static org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateTestUtils.SCD_DTT_DO_SDO_DA_BDA;
-import static org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateTestUtils.initDttAdapterFromFile;
+import static org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateTestUtils.*;
 
 class DataTypeTemplatesServiceTest {
 
@@ -149,17 +148,17 @@ class DataTypeTemplatesServiceTest {
 
 
     @Test
-    void isDataAttributeExist2_should_find_DO_SDO_DA_and_BDA() {
+    void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA() {
         // Given
-        DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
+        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-
         DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
-                dttAdapter.getCurrentElem(), "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
+                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
         // Then
         assertThatCode(() -> dataTypeTemplatesService.isDataObjectsAndDataAttributesExists(
-                dttAdapter.getCurrentElem(), "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2"))
+                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2"))
                 .doesNotThrowAnyException();
 
         assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do1.sdo1.sdo2");
@@ -170,6 +169,35 @@ class DataTypeTemplatesServiceTest {
         assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
                 .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
     }
+
+
+    @Test
+    void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA_test2() {
+        // Given
+//        DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        TDataTypeTemplates dtt = scd.getDataTypeTemplates();
+        // When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        String dataRef = "Do.sdo1.d.antRef.bda1.bda2.bda3";
+        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+                dtt, "LNO1", dataRef);
+        // Then
+        assertThatCode(() -> dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+                dtt, "LNO1", dataRef))
+                .doesNotThrowAnyException();
+
+        assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do.sdo1.d");
+        assertThat(dataAttributeRefs.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRefs).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
+                .containsExactly("Do.sdo1.d", "antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
+        assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
+                .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
+        assertThat(dataAttributeRefs.getDaName().isValImport()).isEqualTo(true);
+        assertThat(dataAttributeRefs.getDaName().isUpdatable()).isEqualTo(true);
+    }
+
 
     @Test
     void isDoObjectsAndDataAttributesExists_when_LNodeType_not_exist_should_return_error_report_item() {
@@ -291,11 +319,12 @@ class DataTypeTemplatesServiceTest {
     @Test
     void isDoObjectsAndDataAttributesExists_should_return_empty_report() {
         // Given
-        DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
+        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
         List<SclReportItem> sclReportItems = dataTypeTemplatesService.isDataObjectsAndDataAttributesExists(
-                dttAdapter.getCurrentElem(), "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
+                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
         // Then
         assertThat(sclReportItems).isEmpty();
     }
@@ -303,15 +332,28 @@ class DataTypeTemplatesServiceTest {
     @Test
     void verifyDataObjectsAndDataAttributes_should_return_empty_report() {
         // Given
-        DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
+        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         DoTypeName doTypeName = new DoTypeName("Do1.sdo1.sdo2");
         DaTypeName daTypeName = new DaTypeName("da2.bda1.bda2");
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
         List<SclReportItem> sclReportItems = dataTypeTemplatesService.verifyDataObjectsAndDataAttributes(
-                dttAdapter.getCurrentElem(), "LN1", doTypeName, daTypeName);
+                dtt, "LN1", doTypeName, daTypeName);
         // Then
         assertThat(sclReportItems).isEmpty();
+    }
+
+    @Test
+    void getAllDataObjectsAndDataAttributes_should_return_all_dataReference() {
+        // Given
+        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml";
+        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        // When
+        DataTypeTemplatesService dttService = new DataTypeTemplatesService();
+        List<DataAttributeRef> dataRef = dttService.getAllDataObjectsAndDataAttributes(dtt);
+        // Then
+        assertThat(dataRef).hasSize(6);
     }
 
 }

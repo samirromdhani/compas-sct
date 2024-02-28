@@ -95,6 +95,7 @@ public interface SclElementsProvider {
      * @throws ScdException SCD illegal arguments exception, missing mandatory data
      */
     Set<DataAttributeRef> getDAI(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef, boolean updatable) throws ScdException;
+    List<DataAttributeRef> getDAI2(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef, boolean updatable) throws ScdException;
 
     /**
      * Gets EnumTypes values of ID <em>idEnum</em> from DataTypeTemplate of SCL file

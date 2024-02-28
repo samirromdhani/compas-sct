@@ -5,6 +5,8 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.lfenergy.compas.scl2007b4.model.*;
+import org.lfenergy.compas.sct.commons.api.DataTypeTemplateReader;
+import org.lfenergy.compas.sct.commons.api.LNEditor;
 import org.lfenergy.compas.sct.commons.api.SclElementsProvider;
 import org.lfenergy.compas.sct.commons.dto.*;
 import org.lfenergy.compas.sct.commons.exception.ScdException;
@@ -18,8 +20,15 @@ import org.lfenergy.compas.sct.commons.scl.ln.AbstractLNAdapter;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SclElementsProviderService implements SclElementsProvider {
+
+    private final IedService iedService = new IedService();
+    private final LdeviceService ldeviceService = new LdeviceService();
+    private final DataTypeTemplateReader dttReader = new DataTypeTemplatesService();
+    private final LnodeTypeService lnodeTypeService = new LnodeTypeService();
+    private final LNEditor lnEditor = new LnService();
 
     @Override
     public List<SubNetworkDTO> getSubnetwork(SCL scd) throws ScdException {
@@ -97,6 +106,26 @@ public class SclElementsProviderService implements SclElementsProvider {
         IEDAdapter iedAdapter = sclRootAdapter.getIEDAdapterByName(iedName);
         LDeviceAdapter lDeviceAdapter = iedAdapter.getLDeviceAdapterByLdInst(ldInst);
         return lDeviceAdapter.getDAI(dataAttributeRef, updatable);
+    }
+
+    @Override
+    public List<DataAttributeRef> getDAI2(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef, boolean updatable) throws ScdException {
+//         return iedService.findIed(scd, tied -> tied.getName().equals(iedName))
+//                .flatMap(tied -> ldeviceService.findLdevice(tied, tlDevice1 -> tlDevice1.getInst().equals(ldInst)))
+//                .stream()
+//                .flatMap(tlDevice -> Stream.of((TAnyLN)tlDevice.getLN().stream(), (TAnyLN)tlDevice.getLN0())
+//                        .flatMap(tAnyLN1 -> lnodeTypeService.findLnodeType(scd.getDataTypeTemplates(), tlNodeType -> tlNodeType.getId().equals(tAnyLN1.getLnType()))
+//                               .stream()
+//                               .flatMap(tlNodeType -> lnodeTypeService.getDataAttributeRefs(scd.getDataTypeTemplates(), tlNodeType).stream()))).toList();
+        return iedService.findIed(scd, tied -> tied.getName().equals(iedName))
+                .flatMap(tied -> ldeviceService.findLdevice(tied, tlDevice1 -> tlDevice1.getInst().equals(ldInst)))
+                .stream()
+                .flatMap(tlDevice -> tlDevice.getLN()
+                        .stream()
+                        .flatMap(tAnyLN1 -> lnodeTypeService.findLnodeType(scd.getDataTypeTemplates(), tlNodeType -> tlNodeType.getId().equals(tAnyLN1.getLnType()))
+                                .stream()
+                                .flatMap(tlNodeType -> lnodeTypeService.getDataAttributeRefs(scd.getDataTypeTemplates(), tlNodeType)
+                                        .stream()))).toList();
     }
 
     @Override
