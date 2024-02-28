@@ -8,10 +8,16 @@ import org.lfenergy.compas.scl2007b4.model.TAnyLN;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
+import org.lfenergy.compas.sct.commons.dto.SclReportItem;
+
+import java.util.List;
 
 public interface LNEditor {
 
-    boolean isDoObjectsInstanceAndDataAttributesInstanceExists(TAnyLN tAnyLN, DoTypeName doTypeName, DaTypeName daTypeName);
+    boolean isDOAndDAInstanceExists(TAnyLN tAnyLN, DoTypeName doTypeName, DaTypeName daTypeName);
 
-    void updateOrCreateDoObjectsAndDataAttributesInstances(TAnyLN tAnyLN, DataAttributeRef dataAttributeRef);
+    List<SclReportItem> getDOAndDAInstances(TAnyLN tAnyLN, DataAttributeRef dataAttributeRef);
+
+    void updateOrCreateDOAndDAInstances(TAnyLN tAnyLN, DataAttributeRef dataAttributeRef);
+
 }

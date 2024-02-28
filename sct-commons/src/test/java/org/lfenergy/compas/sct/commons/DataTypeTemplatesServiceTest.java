@@ -11,6 +11,7 @@ import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
 import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateAdapter;
+import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 
 import java.util.List;
 
@@ -149,7 +150,7 @@ class DataTypeTemplatesServiceTest {
 
 
     @Test
-    void isDataAttributeExist2_should_find_DO_SDO_DA_and_BDA() {
+    void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA() {
         // Given
         DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
         // When
@@ -170,6 +171,35 @@ class DataTypeTemplatesServiceTest {
         assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
                 .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
     }
+
+
+    @Test
+    void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA_test2() {
+        // Given
+//        DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        TDataTypeTemplates dtt = scd.getDataTypeTemplates();
+        // When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        String dataRef = "Do.sdo1.d.antRef.bda1.bda2.bda3";
+        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+                dtt, "LNO1", dataRef);
+        // Then
+        assertThatCode(() -> dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+                dtt, "LNO1", dataRef))
+                .doesNotThrowAnyException();
+
+        assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do.sdo1.d");
+        assertThat(dataAttributeRefs.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRefs).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
+                .containsExactly("Do.sdo1.d", "antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
+        assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
+                .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
+        assertThat(dataAttributeRefs.getDaName().isValImport()).isEqualTo(true);
+        assertThat(dataAttributeRefs.getDaName().isUpdatable()).isEqualTo(true);
+    }
+
 
     @Test
     void isDoObjectsAndDataAttributesExists_when_LNodeType_not_exist_should_return_error_report_item() {

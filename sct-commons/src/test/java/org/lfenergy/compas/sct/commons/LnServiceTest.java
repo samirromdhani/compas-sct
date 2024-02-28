@@ -10,6 +10,7 @@ import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
+import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 import org.lfenergy.compas.sct.commons.util.ActiveStatus;
 
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.lfenergy.compas.sct.commons.testhelpers.DataTypeUtils.*;
 
 class LnServiceTest {
@@ -85,7 +87,7 @@ class LnServiceTest {
     }
 
     @Test
-    void isDoObjectsInstanceAndDataAttributesInstanceExists_should_return_true_when_DO_and_DA_instances_exists() {
+    void isDOAndDAInstanceExists_should_return_true_when_DO_and_DA_instances_exists() {
         //Given
         SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
         TAnyLN tAnyLN = scd.getIED().stream()
@@ -101,14 +103,14 @@ class LnServiceTest {
         DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
         //When
         LnService lnService = new LnService();
-        boolean exist = lnService.isDoObjectsInstanceAndDataAttributesInstanceExists(tAnyLN, doTypeName, daTypeName);
+        boolean exist = lnService.isDOAndDAInstanceExists(tAnyLN, doTypeName, daTypeName);
         //Then
         assertThat(exist).isTrue();
     }
 
 
     @Test
-    void isDoObjectsInstanceAndDataAttributesInstanceExists_should_return_false_when_DO_and_DA_instances_not_exists() {
+    void isDOAndDAInstanceExists_should_return_false_when_DO_and_DA_instances_not_exists() {
         //Given
         SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
         TAnyLN tAnyLN = scd.getIED().stream()
@@ -124,9 +126,64 @@ class LnServiceTest {
         DaTypeName daTypeName = new DaTypeName("antRef.unknown.bda2.bda3");
         //When
         LnService lnService = new LnService();
-        boolean exist = lnService.isDoObjectsInstanceAndDataAttributesInstanceExists(tAnyLN, doTypeName, daTypeName);
+        boolean exist = lnService.isDOAndDAInstanceExists(tAnyLN, doTypeName, daTypeName);
         //Then
         assertThat(exist).isFalse();
+    }
+
+
+    private TAnyLN initDOAndDAInstances(List<String> doInstances, List<String> daInstances){
+        TLN0 tln0 = new TLN0();
+//        TDOI
+//        tln0.getDOI().add()
+//        doInstances.g
+        return tln0;
+    }
+
+    @Test
+    void getDOAndDAInstances_should_return_when_ADF() {
+        //Given
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        TAnyLN tAnyLN = scd.getIED().stream()
+                .filter(tied -> tied.getName().equals("IED_NAME")).findFirst().get()
+                .getAccessPoint()
+                .get(0)
+                .getServer()
+                .getLDevice().stream()
+                .filter(tlDevice -> tlDevice.getInst().equals("LD_INS1")).findFirst()
+                .get()
+                .getLN0();
+        DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
+        doTypeName.setCdc(TPredefinedCDCEnum.WYE);
+        DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
+        daTypeName.setFc(TFCEnum.ST);
+        daTypeName.setBType(TPredefinedBasicTypeEnum.ENUM);
+        daTypeName.setValImport(true);
+
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setDoName(doTypeName);
+        dataAttributeRef.setDaName(daTypeName);
+
+        assertThat(daTypeName.isValImport()).isEqualTo(true);
+        assertThat(daTypeName.isUpdatable()).isEqualTo(true);
+        //When
+        LnService lnService = new LnService();
+//        assertThatCode(() -> lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef))
+//                .doesNotThrowAnyException();
+        List<SclReportItem> sclReportItems = lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef);
+        //Then
+        assertThat(sclReportItems).isEmpty();
+        assertThat(dataAttributeRef.getDoRef()).isEqualTo("Do.sdo1.d");
+        assertThat(dataAttributeRef.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(false);
+        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(false);
+        assertThat(dataAttributeRef.getDoName())
+                .usingRecursiveComparison()
+                .isEqualTo(doTypeName);
+        assertThat(dataAttributeRef.getDaName())
+                .usingRecursiveComparison()
+                .ignoringFields("valImport","daiValues")
+                .isEqualTo(daTypeName);
     }
 
     @Test
@@ -142,7 +199,7 @@ class LnServiceTest {
 
         //When
         LnService lnService = new LnService();
-        lnService.updateOrCreateDoObjectsAndDataAttributesInstances(tAnyLN, dataAttributeRef);
+        lnService.updateOrCreateDOAndDAInstances(tAnyLN, dataAttributeRef);
         //Then
         assertThat(tAnyLN.getDOI()).hasSize(1);
         assertThat(tAnyLN.getDOI().get(0).getName()).isEqualTo("Mod");
@@ -167,7 +224,7 @@ class LnServiceTest {
 
         //When
         LnService lnService = new LnService();
-        lnService.updateOrCreateDoObjectsAndDataAttributesInstances(tAnyLN, dataAttributeRef);
+        lnService.updateOrCreateDOAndDAInstances(tAnyLN, dataAttributeRef);
 
         //Then
         assertThat(tAnyLN.getDOI()).hasSize(1);
