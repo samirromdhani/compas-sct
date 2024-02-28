@@ -17,7 +17,7 @@
                                     <SDI name="antRef"> <!-- this is a DA -->
                                         <SDI name="bda1">
                                             <SDI name="bda2">
-                                                <DAI name="bda3" valImport="false"> <!-- [Do.sdo1.d] && [antRef.bda1.bda2.bda3] -->
+                                                <DAI name="bda3" valImport="true"> <!-- [Do.sdo1.d] && [antRef.bda1.bda2.bda3] -->
                                                     <Val>Completed-diff</Val>
                                                 </DAI>
                                             </SDI>

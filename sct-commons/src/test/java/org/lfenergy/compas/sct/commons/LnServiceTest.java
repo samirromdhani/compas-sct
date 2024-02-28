@@ -5,6 +5,7 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
@@ -14,11 +15,11 @@ import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 import org.lfenergy.compas.sct.commons.util.ActiveStatus;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.lfenergy.compas.sct.commons.testhelpers.DataTypeUtils.*;
 
 class LnServiceTest {
@@ -89,16 +90,10 @@ class LnServiceTest {
     @Test
     void isDOAndDAInstanceExists_should_return_true_when_DO_and_DA_instances_exists() {
         //Given
-        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
-        TAnyLN tAnyLN = scd.getIED().stream()
-                .filter(tied -> tied.getName().equals("IED_NAME")).findFirst().get()
-                .getAccessPoint()
-                .get(0)
-                .getServer()
-                .getLDevice().stream()
-                .filter(tlDevice -> tlDevice.getInst().equals("LD_INS1")).findFirst()
-                .get()
-                .getLN0();
+        TAnyLN tAnyLN = initDOAndDAInstances(
+                new LinkedList<>(List.of("Do","sdo1", "d")),
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+        );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
         //When
@@ -112,16 +107,10 @@ class LnServiceTest {
     @Test
     void isDOAndDAInstanceExists_should_return_false_when_DO_and_DA_instances_not_exists() {
         //Given
-        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
-        TAnyLN tAnyLN = scd.getIED().stream()
-                .filter(tied -> tied.getName().equals("IED_NAME")).findFirst().get()
-                .getAccessPoint()
-                .get(0)
-                .getServer()
-                .getLDevice().stream()
-                .filter(tlDevice -> tlDevice.getInst().equals("LD_INS1")).findFirst()
-                .get()
-                .getLN0();
+        TAnyLN tAnyLN = initDOAndDAInstances(
+                new LinkedList<>(List.of("Do","sdo1", "d")),
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+        );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         DaTypeName daTypeName = new DaTypeName("antRef.unknown.bda2.bda3");
         //When
@@ -131,17 +120,45 @@ class LnServiceTest {
         assertThat(exist).isFalse();
     }
 
-
-    private TAnyLN initDOAndDAInstances(List<String> doInstances, List<String> daInstances){
-        TLN0 tln0 = new TLN0();
-//        TDOI
-//        tln0.getDOI().add()
-//        doInstances.g
-        return tln0;
-    }
-
     @Test
     void getDOAndDAInstances_should_return_when_ADF() {
+        //Given
+        TAnyLN tAnyLN = initDOAndDAInstances(
+                new LinkedList<>(List.of("Do","sdo1", "d")),
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+        );
+        DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
+        doTypeName.setCdc(TPredefinedCDCEnum.WYE);
+        DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
+        daTypeName.setFc(TFCEnum.ST);
+        daTypeName.setBType(TPredefinedBasicTypeEnum.ENUM);
+        daTypeName.setValImport(true);
+
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setDoName(doTypeName);
+        dataAttributeRef.setDaName(daTypeName);
+        //When
+        LnService lnService = new LnService();
+        List<SclReportItem> sclReportItems = lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef);
+        //Then
+        assertThat(sclReportItems).isEmpty();
+        assertThat(dataAttributeRef.getDoRef()).isEqualTo("Do.sdo1.d");
+        assertThat(dataAttributeRef.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(false);
+        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(false);
+        assertThat(dataAttributeRef.getDoName())
+                .usingRecursiveComparison()
+                .isEqualTo(doTypeName);
+        assertThat(dataAttributeRef.getDaName())
+                .usingRecursiveComparison()
+                .ignoringFields("valImport","daiValues")
+                .isEqualTo(daTypeName);
+    }
+
+
+    @Test
+    @Disabled
+    void getDOAndDAInstances_should_return_when_data_from_xml_file_to_remove() {
         //Given
         SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
         TAnyLN tAnyLN = scd.getIED().stream()
@@ -168,15 +185,13 @@ class LnServiceTest {
         assertThat(daTypeName.isUpdatable()).isEqualTo(true);
         //When
         LnService lnService = new LnService();
-//        assertThatCode(() -> lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef))
-//                .doesNotThrowAnyException();
         List<SclReportItem> sclReportItems = lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef);
         //Then
         assertThat(sclReportItems).isEmpty();
         assertThat(dataAttributeRef.getDoRef()).isEqualTo("Do.sdo1.d");
         assertThat(dataAttributeRef.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
-        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(false);
-        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(false);
+        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(true);
+        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(true);
         assertThat(dataAttributeRef.getDoName())
                 .usingRecursiveComparison()
                 .isEqualTo(doTypeName);
@@ -248,6 +263,125 @@ class LnServiceTest {
                 .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal().get(0).isSetSGroup()).isFalse();
         assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
                 .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal().get(0).getValue()).isEqualTo("new value");
+    }
+
+
+    @Test
+    void updateOrCreateDoObjectsAndDataAttributesInstances_should_complete_DO_and_DA_instances_creation() {
+        //Given
+        TAnyLN tAnyLN = initDOAndDAInstances(
+                new LinkedList<>(List.of("Do","sdo1", "d")),
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+        );
+
+        DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
+        DaTypeName daTypeName = new DaTypeName("antRef.bda1");
+        daTypeName.getDaiValues().put(0L, "new value");
+        DataAttributeRef dataAttributeRef = createDataAttributeRef(doTypeName, daTypeName);
+
+        //When
+        LnService lnService = new LnService();
+        lnService.updateOrCreateDOAndDAInstances(tAnyLN, dataAttributeRef);
+
+        //Then
+        assertThat(tAnyLN.getDOI()).hasSize(1);
+        assertThat(tAnyLN.getDOI().get(0).getName()).isEqualTo("Do");
+        assertThat(tAnyLN.getDOI().get(0).getSDIOrDAI()).hasSize(1);
+        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getName()).isEqualTo("sdo1");
+        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("d");
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
+
+        assertThat((( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getName()).isEqualTo("antRef");
+        assertThat((( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(2);
+
+        // SDI and  DAI already exist
+        assertThat((( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("bda1");
+        assertThat((( TSDI )(( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("bda2");
+        assertThat((( TDAI )((TSDI) (( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("bda3");
+
+        //New DAI
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getName()).isEqualTo("bda1");
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getVal()).hasSize(1);
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getVal().get(0).isSetSGroup()).isFalse();
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getVal().get(0).getValue()).isEqualTo("new value");
+    }
+
+
+
+
+
+
+    private TSDI createSDIFromDOI(TDOI doi, String sdiName) {
+        return doi.getSDIOrDAI().stream()
+                .filter(sdi -> sdi.getClass().equals(TSDI.class))
+                .map(TSDI.class::cast)
+                .filter(tsdi -> tsdi.getName().equals(sdiName))
+                .findFirst()
+                .orElseGet(() -> {
+                    TSDI tsdi = new TSDI();
+                    tsdi.setName(sdiName);
+                    doi.getSDIOrDAI().add(tsdi);
+                    return tsdi;
+                });
+    }
+
+    private TSDI createSDIFromSDI(TSDI sdi, String sdiName) {
+        return sdi.getSDIOrDAI().stream()
+                .filter(unNaming -> unNaming.getClass().equals(TSDI.class))
+                .map(TSDI.class::cast)
+                .filter(tsdi -> tsdi.getName().equals(sdiName))
+                .findFirst()
+                .orElseGet(() -> {
+                    TSDI tsdi = new TSDI();
+                    tsdi.setName(sdiName);
+                    sdi.getSDIOrDAI().add(tsdi);
+                    return tsdi;
+                });
+    }
+
+    private TSDI createSDIByStructName(TSDI tsdi, LinkedList<String> structNames) {
+        structNames.remove();
+        if(structNames.isEmpty() || structNames.size() == 1) return tsdi;
+        return createSDIByStructName(createSDIFromSDI(tsdi, structNames.getFirst()), structNames);
+    }
+
+    private TAnyLN initDOAndDAInstances(LinkedList<String> doInstances, LinkedList<String> daInstances){
+        assertThat(doInstances.size()).isGreaterThanOrEqualTo(1);
+        assertThat(daInstances.size()).isGreaterThanOrEqualTo(1);
+        LinkedList<String> structInstances = new LinkedList<>(doInstances);
+        daInstances.forEach(structInstances::addLast);
+        TLN0 tln0 = new TLN0();
+        TDOI tdoi = new TDOI();
+        tdoi.setName(doInstances.get(0));
+        structInstances.remove();
+        if(structInstances.size() > 1){
+            TSDI firstSDI = createSDIFromDOI(tdoi, structInstances.get(0));
+            TSDI lastSDI = createSDIByStructName(firstSDI, structInstances);
+            if(structInstances.size() == 1){
+                TDAI dai = new TDAI();
+                dai.setName(daInstances.get(daInstances.size() - 1));
+                dai.setValImport(false);
+                lastSDI.getSDIOrDAI().add(dai);
+            }
+        } else
+        if(structInstances.size() == 1){
+            TDAI dai = new TDAI();
+            dai.setName(daInstances.get(daInstances.size() - 1));
+            dai.setValImport(false);
+            tdoi.getSDIOrDAI().add(dai);
+        }
+        tln0.getDOI().add(tdoi);
+        return tln0;
     }
 
 
