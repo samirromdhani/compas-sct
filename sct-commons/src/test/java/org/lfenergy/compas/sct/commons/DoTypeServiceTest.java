@@ -91,9 +91,11 @@ class DoTypeServiceTest {
         //When
         List<DataAttributeRef> list = doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef);
         //Then
-        assertThat(list).hasSize(6);
+        assertThat(list).hasSize(8);
         assertThat(list.stream().map(DataAttributeRef::getDoRef))
                 .containsExactly(
+                        "firstDONAME.unused",
+                        "firstDONAME.unused.otherSdo",
                         "firstDONAME.unused.otherSdo.otherSdo2",
                         "firstDONAME.sdo2",
                         "firstDONAME.sdo2",
@@ -102,6 +104,8 @@ class DoTypeServiceTest {
                         "firstDONAME");
         assertThat(list.stream().map(DataAttributeRef::getDaRef))
                 .containsExactly(
+                        "unused",
+                        "unused",
                         "danameForotherSdo2",
                         "da1",
                         "da2.bda1sample",
@@ -110,4 +114,24 @@ class DoTypeServiceTest {
                         "daname");
     }
 
+    @Test
+    void getDataAttributeRefs_should_return_all_dai() {
+        // GIVEN
+        SCL scd = SclTestMarshaller.getSCLFromFile("/scl-srv-import-ieds/ied_1_test.xml");
+        TDataTypeTemplates dtt = scd.getDataTypeTemplates();
+
+        DoTypeService doTypeService = new DoTypeService();
+        TDOType tdoType = doTypeService.findDoType(dtt, tdoType1 -> tdoType1.getId()
+                .equals("DO11")).get();
+        DataAttributeRef dataRef = new DataAttributeRef();
+        DoTypeName doTypeName = new DoTypeName();
+        doTypeName.setName("firstDONAME");
+        DaTypeName daTypeName = new DaTypeName();
+        dataRef.setDoName(doTypeName);
+        dataRef.setDaName(daTypeName);
+        // When
+        List<DataAttributeRef> list = doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef);
+        // Then
+        assertThat(list).hasSize(811);
+    }
 }

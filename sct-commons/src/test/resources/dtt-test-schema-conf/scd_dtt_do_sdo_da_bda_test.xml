@@ -16,7 +16,6 @@
             <SDO name="unused" type="UNUSED"/>
             <SDO name="sdo2" type="SDO2"/>
             <DA name="daname" bType="BOOLEAN" fc="ST"/>
-<!--            <DA name="daname" bType="Struct" type="BDATEST" fc="ST"/>-->
         </DOType>
         <DOType cdc="WYE" id="SDO2">
             <DA name="da1" bType="BOOLEAN" fc="ST"/>

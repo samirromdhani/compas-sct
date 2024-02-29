@@ -353,7 +353,7 @@ class DataTypeTemplatesServiceTest {
         DataTypeTemplatesService dttService = new DataTypeTemplatesService();
         List<DataAttributeRef> dataRef = dttService.getAllDataObjectsAndDataAttributes(dtt);
         // Then
-        assertThat(dataRef).hasSize(6);
+        assertThat(dataRef).hasSize(8);
     }
 
 }
