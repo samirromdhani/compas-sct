@@ -92,7 +92,8 @@ class LnServiceTest {
         //Given
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("Do","sdo1", "d")),
-                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3")),
+                "new value"
         );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
@@ -109,7 +110,8 @@ class LnServiceTest {
         //Given
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("Do","sdo1", "d")),
-                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3")),
+                "new value"
         );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         DaTypeName daTypeName = new DaTypeName("antRef.unknown.bda2.bda3");
@@ -125,7 +127,8 @@ class LnServiceTest {
         //Given
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("Do","sdo1", "d")),
-                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3")),
+                "new value"
         );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         doTypeName.setCdc(TPredefinedCDCEnum.WYE);
@@ -144,8 +147,8 @@ class LnServiceTest {
         assertThat(sclReportItems).isEmpty();
         assertThat(dataAttributeRef.getDoRef()).isEqualTo("Do.sdo1.d");
         assertThat(dataAttributeRef.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
-        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(false);
-        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(false);
+        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(true);
+        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(true);
         assertThat(dataAttributeRef.getDoName())
                 .usingRecursiveComparison()
                 .isEqualTo(doTypeName);
@@ -181,8 +184,6 @@ class LnServiceTest {
         dataAttributeRef.setDoName(doTypeName);
         dataAttributeRef.setDaName(daTypeName);
 
-        assertThat(daTypeName.isValImport()).isEqualTo(true);
-        assertThat(daTypeName.isUpdatable()).isEqualTo(true);
         //When
         LnService lnService = new LnService();
         List<SclReportItem> sclReportItems = lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef);
@@ -202,7 +203,7 @@ class LnServiceTest {
     }
 
     @Test
-    void updateOrCreateDoObjectsAndDataAttributesInstances_should_create_given_DO_and_DA_instances_when_no_struct_and_with_settingGroup() {
+    void updateOrCreateDOAndDAInstances_should_create_given_DO_and_DA_instances_when_no_struct_and_with_settingGroup() {
         //Given
         TAnyLN tAnyLN = new LN0();
 
@@ -229,7 +230,7 @@ class LnServiceTest {
 
 
     @Test
-    void updateOrCreateDoObjectsAndDataAttributesInstances_should_create_given_DO_and_DA_instances_when_struct_and_without_settingGroup() {
+    void updateOrCreateDOAndDAInstances_should_create_given_DO_and_DA_instances_when_struct_and_without_settingGroup() {
         //Given
         TAnyLN tAnyLN = new LN0();
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
@@ -265,61 +266,58 @@ class LnServiceTest {
                 .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal().get(0).getValue()).isEqualTo("new value");
     }
 
-
     @Test
-    void updateOrCreateDoObjectsAndDataAttributesInstances_should_complete_DO_and_DA_instances_creation() {
+    void updateOrCreateDOAndDAInstances_should_complete_DO_and_DA_instances_creation() {
         //Given
         TAnyLN tAnyLN = initDOAndDAInstances(
-                new LinkedList<>(List.of("Do","sdo1", "d")),
-                new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3"))
+                new LinkedList<>(List.of("DoName1","SdoName1", "SdoName2")),
+                new LinkedList<>(List.of("DaName1","BdaName1", "BdaName2")),
+                "dai value"
         );
-
-        DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
-        DaTypeName daTypeName = new DaTypeName("antRef.bda1");
-        daTypeName.getDaiValues().put(0L, "new value");
+        DoTypeName doTypeName = new DoTypeName("DoName1.SdoName1");
+        DaTypeName daTypeName = new DaTypeName("DaName2.BdaName1");
+        daTypeName.getDaiValues().put(0L, "new dai value");
         DataAttributeRef dataAttributeRef = createDataAttributeRef(doTypeName, daTypeName);
-
         //When
         LnService lnService = new LnService();
         lnService.updateOrCreateDOAndDAInstances(tAnyLN, dataAttributeRef);
-
         //Then
-        assertThat(tAnyLN.getDOI()).hasSize(1);
-        assertThat(tAnyLN.getDOI().get(0).getName()).isEqualTo("Do");
-        assertThat(tAnyLN.getDOI().get(0).getSDIOrDAI()).hasSize(1);
-        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getName()).isEqualTo("sdo1");
-        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
-        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("d");
-        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
-
-        assertThat((( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getName()).isEqualTo("antRef");
-        assertThat((( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(2);
-
         // SDI and  DAI already exist
+        assertThat(tAnyLN.getDOI()).hasSize(1);
+        assertThat(tAnyLN.getDOI().get(0).getName()).isEqualTo("DoName1");
+        assertThat(tAnyLN.getDOI().get(0).getSDIOrDAI()).hasSize(1);
+        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getName()).isEqualTo("SdoName1");
+        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(2);//new SDI
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("SdoName2");
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
+        assertThat((( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getName()).isEqualTo("DaName1");
+        assertThat((( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
         assertThat((( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("bda1");
-        assertThat((( TSDI )(( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("bda2");
-        assertThat((( TDAI )((TSDI) (( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("bda3");
-
-        //New DAI
-        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getName()).isEqualTo("bda1");
-        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getVal()).hasSize(1);
-        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getVal().get(0).isSetSGroup()).isFalse();
-        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
-                .getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getVal().get(0).getValue()).isEqualTo("new value");
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("BdaName1");
+        assertThat((( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("BdaName2");
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal()).hasSize(1);
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal().get(0).getValue()).isEqualTo("dai value");
+        assertThat((( TDAI )(( TSDI )(( TSDI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal().get(0).isSetSGroup()).isFalse();
+        //New SDI nad DAI
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getName()).isEqualTo("DaName2");
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(1)).getSDIOrDAI()).hasSize(1);
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(1))
+                .getSDIOrDAI().get(0)).getName()).isEqualTo("BdaName1");
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(1))
+                .getSDIOrDAI().get(0)).getVal()).hasSize(1);
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(1))
+                .getSDIOrDAI().get(0)).getVal().get(0).getValue()).isEqualTo("new dai value");
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(1))
+                .getSDIOrDAI().get(0)).getVal().get(0).isSetSGroup()).isFalse();
     }
-
-
-
-
-
 
     private TSDI createSDIFromDOI(TDOI doi, String sdiName) {
         return doi.getSDIOrDAI().stream()
@@ -355,7 +353,7 @@ class LnServiceTest {
         return createSDIByStructName(createSDIFromSDI(tsdi, structNames.getFirst()), structNames);
     }
 
-    private TAnyLN initDOAndDAInstances(LinkedList<String> doInstances, LinkedList<String> daInstances){
+    private TAnyLN initDOAndDAInstances(LinkedList<String> doInstances, LinkedList<String> daInstances, String daiVal){
         assertThat(doInstances.size()).isGreaterThanOrEqualTo(1);
         assertThat(daInstances.size()).isGreaterThanOrEqualTo(1);
         LinkedList<String> structInstances = new LinkedList<>(doInstances);
@@ -370,14 +368,18 @@ class LnServiceTest {
             if(structInstances.size() == 1){
                 TDAI dai = new TDAI();
                 dai.setName(daInstances.get(daInstances.size() - 1));
-                dai.setValImport(false);
+                TVal tVal = new TVal();
+                tVal.setValue(daiVal);
+                dai.getVal().add(tVal);
                 lastSDI.getSDIOrDAI().add(dai);
             }
         } else
         if(structInstances.size() == 1){
             TDAI dai = new TDAI();
             dai.setName(daInstances.get(daInstances.size() - 1));
-            dai.setValImport(false);
+            TVal tVal = new TVal();
+            tVal.setValue(daiVal);
+            dai.getVal().add(tVal);
             tdoi.getSDIOrDAI().add(dai);
         }
         tln0.getDOI().add(tdoi);

@@ -4,14 +4,23 @@
 
 package org.lfenergy.compas.sct.commons;
 
+import org.lfenergy.compas.scl2007b4.model.TDOType;
 import org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates;
 import org.lfenergy.compas.scl2007b4.model.TLNodeType;
+import org.lfenergy.compas.sct.commons.dto.DaTypeName;
+import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
+import org.lfenergy.compas.sct.commons.dto.DoTypeName;
+import org.lfenergy.compas.sct.commons.scl.dtt.DOTypeAdapter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class LnodeTypeService {
+
+    private DoTypeService doTypeService = new DoTypeService();
 
     public Stream<TLNodeType> getLnodeTypes(TDataTypeTemplates tDataTypeTemplates) {
         return tDataTypeTemplates.getLNodeType().stream();
@@ -25,4 +34,20 @@ public class LnodeTypeService {
         return getFilteredLnodeTypes(tDataTypeTemplates, tlNodeTypePredicate).findFirst();
     }
 
+    public List<DataAttributeRef> getDataAttributeRefs(TDataTypeTemplates dtt,
+                                                       TLNodeType tlNodeType)  {
+        DataAttributeRef dataRef = new DataAttributeRef();
+        dataRef.setDoName(new DoTypeName());
+        dataRef.setDaName(new DaTypeName());
+        return tlNodeType.getDO().stream()
+                .flatMap(tdo -> {
+                    dataRef.getDoName().setName(tdo.getName());
+                    return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()))
+                            .stream().flatMap(tdoType -> {
+                                dataRef.getDoName().setCdc(tdoType.getCdc());
+                                return doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef).stream();
+                            });
+                })
+                .toList();
+    }
 }

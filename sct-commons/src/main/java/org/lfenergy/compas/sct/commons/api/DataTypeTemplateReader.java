@@ -22,4 +22,6 @@ public interface DataTypeTemplateReader {
 
     DataAttributeRef getDataObjectsAndDataAttributes(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef);
 
+    List<DataAttributeRef> getAllDataObjectsAndDataAttributes(TDataTypeTemplates dtt);
+
 }
