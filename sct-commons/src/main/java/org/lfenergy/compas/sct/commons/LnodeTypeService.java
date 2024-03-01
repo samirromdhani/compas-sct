@@ -4,15 +4,12 @@
 
 package org.lfenergy.compas.sct.commons;
 
-import org.lfenergy.compas.scl2007b4.model.TDOType;
 import org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates;
 import org.lfenergy.compas.scl2007b4.model.TLNodeType;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
-import org.lfenergy.compas.sct.commons.scl.dtt.DOTypeAdapter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;

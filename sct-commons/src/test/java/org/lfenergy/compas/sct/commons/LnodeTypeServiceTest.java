@@ -95,9 +95,11 @@ class LnodeTypeServiceTest {
         //When
         List<DataAttributeRef> list = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
         //Then
-        assertThat(list).hasSize(6);
+        assertThat(list).hasSize(8);
         assertThat(list.stream().map(DataAttributeRef::getDoRef))
                 .containsExactly(
+                        "Do1.unused",
+                        "Do1.unused.otherSdo",
                         "Do1.unused.otherSdo.otherSdo2",
                         "Do1.sdo2",
                         "Do1.sdo2",
@@ -106,6 +108,8 @@ class LnodeTypeServiceTest {
                         "Do1");
         assertThat(list.stream().map(DataAttributeRef::getDaRef))
                 .containsExactly(
+                        "unused",
+                        "unused",
                         "danameForotherSdo2",
                         "da1",
                         "da2.bda1sample",
@@ -114,5 +118,19 @@ class LnodeTypeServiceTest {
                         "daname");
     }
 
+    @Test
+    void getDataAttributeRefs_should_return_all_dai() {
+        // given
+        SCL scd = SclTestMarshaller.getSCLFromFile("/scl-srv-import-ieds/ied_1_test.xml");
+        TDataTypeTemplates dtt = scd.getDataTypeTemplates();
 
+        // when
+        LnodeTypeService lnodeTypeService = new LnodeTypeService();
+        TLNodeType tdoType = lnodeTypeService.findLnodeType(dtt, tlNodeType -> tlNodeType.getId()
+                .equals("LN2")).get();
+        //When
+        List<DataAttributeRef> list = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
+        //Then
+        assertThat(list).hasSize(1622);
+    }
 }

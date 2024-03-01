@@ -331,6 +331,4 @@ public class LnService implements LNEditor {
         return findOrCreateSDIByStructName(findOrCreateSDIFromSDI(sdi, structName.getFirst()), structName);
     }
 
-
-
 }

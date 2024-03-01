@@ -5,7 +5,6 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -134,6 +133,21 @@ class SclElementsProviderServiceTest {
         //Then
         assertThat(controlBlocks).hasSize(1);
         assertThat(controlBlocks.get(0).getName()).isEqualTo("goose2");
+    }
+
+    @Test
+    void getDAI2_should_return_all_dai() {
+        // GIVEN
+        SCL scd = SclTestMarshaller.getSCLFromFile("/scl-srv-import-ieds/ied_1_test.xml");
+        // WHEN
+        List<DataAttributeRef> result = sclElementsProviderService.getDAI2(scd, "IED_NAME1", "LD_INST12", new DataAttributeRef(), true);
+        // THEN
+//        result.forEach(data -> {
+//            System.out.println("====");
+//            System.out.println("[DO] "+data.getDoName().getName() +" -> "+data.getDoName().getStructNames());
+//            System.out.println("[DA] "+data.getDaName().getName() +" -> "+data.getDaName().getStructNames());
+//        });
+        assertThat(result).hasSize(811);//original one expect 733 ref
     }
 
     @Test
