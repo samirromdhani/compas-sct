@@ -33,11 +33,14 @@ public class LnodeTypeService {
 
     public List<DataAttributeRef> getDataAttributeRefs(TDataTypeTemplates dtt,
                                                        TLNodeType tlNodeType)  {
+
         DataAttributeRef dataRef = new DataAttributeRef();
         dataRef.setDoName(new DoTypeName());
         dataRef.setDaName(new DaTypeName());
         return tlNodeType.getDO().stream()
                 .flatMap(tdo -> {
+                    dataRef.setLnType(tlNodeType.getId());
+                    dataRef.setLnClass(tlNodeType.getLnClass().get(0));
                     dataRef.getDoName().setName(tdo.getName());
                     return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()))
                             .stream().flatMap(tdoType -> {

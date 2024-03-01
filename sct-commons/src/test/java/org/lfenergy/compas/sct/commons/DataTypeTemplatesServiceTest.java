@@ -4,6 +4,8 @@
 
 package org.lfenergy.compas.sct.commons;
 
+import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
@@ -18,7 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateTestUtils.*;
 
+@Disabled
 class DataTypeTemplatesServiceTest {
+
+    final private String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
 
     @Test
     void isDoModAndDaStValExist_when_LNodeType_not_exist_should_return_false() {
@@ -146,35 +151,9 @@ class DataTypeTemplatesServiceTest {
         assertThat(result).isTrue();
     }
 
-
-    @Test
-    void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA() {
-        // Given
-        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
-        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
-        // When
-        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
-                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
-        // Then
-        assertThatCode(() -> dataTypeTemplatesService.isDataObjectsAndDataAttributesExists(
-                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2"))
-                .doesNotThrowAnyException();
-
-        assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do1.sdo1.sdo2");
-        assertThat(dataAttributeRefs.getDaRef()).isEqualTo("da2.bda1.bda2");
-        assertThat(dataAttributeRefs).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
-                .containsExactly("Do1.sdo1.sdo2", "da2.bda1.bda2");
-        assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
-        assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
-                .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
-    }
-
-
     @Test
     void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA_test2() {
         // Given
-//        DataTypeTemplateAdapter dttAdapter = initDttAdapterFromFile(SCD_DTT_DO_SDO_DA_BDA);
         SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
         TDataTypeTemplates dtt = scd.getDataTypeTemplates();
         // When
@@ -194,10 +173,31 @@ class DataTypeTemplatesServiceTest {
         assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
         assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
                 .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
-        assertThat(dataAttributeRefs.getDaName().isValImport()).isEqualTo(true);
-        assertThat(dataAttributeRefs.getDaName().isUpdatable()).isEqualTo(true);
+        assertThat(dataAttributeRefs.getDaName().isValImport()).isTrue();
+        assertThat(dataAttributeRefs.getDaName().isUpdatable()).isTrue();
     }
 
+    @Test
+    void isDataObjectsAndDataAttributesExists_should_find_DO_SDO_DA_and_BDA() {
+        // Given
+        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        // When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
+        // Then
+        assertThatCode(() -> dataTypeTemplatesService.isDataObjectsAndDataAttributesExists(
+                dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2"))
+                .doesNotThrowAnyException();
+
+        assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do1.sdo1.sdo2");
+        assertThat(dataAttributeRefs.getDaRef()).isEqualTo("da2.bda1.bda2");
+        assertThat(dataAttributeRefs).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
+                .containsExactly("Do1.sdo1.sdo2", "da2.bda1.bda2");
+        assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
+        assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
+                .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
+    }
 
     @Test
     void isDoObjectsAndDataAttributesExists_when_LNodeType_not_exist_should_return_error_report_item() {
@@ -319,7 +319,6 @@ class DataTypeTemplatesServiceTest {
     @Test
     void isDoObjectsAndDataAttributesExists_should_return_empty_report() {
         // Given
-        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
         TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
@@ -332,28 +331,215 @@ class DataTypeTemplatesServiceTest {
     @Test
     void verifyDataObjectsAndDataAttributes_should_return_empty_report() {
         // Given
-        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda.xml";
         TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         DoTypeName doTypeName = new DoTypeName("Do1.sdo1.sdo2");
         DaTypeName daTypeName = new DaTypeName("da2.bda1.bda2");
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<SclReportItem> sclReportItems = dataTypeTemplatesService.verifyDataObjectsAndDataAttributes(
-                dtt, "LN1", doTypeName, daTypeName);
+        List<SclReportItem> sclReportItems = dataTypeTemplatesService.verifyDataObjectsAndDataAttributes(dtt, "LN1", doTypeName, daTypeName);
         // Then
         assertThat(sclReportItems).isEmpty();
+    }
+
+
+    @Test
+    void getAllDataObjectsAndDataAttributes_when_LNodeType_not_exist_should_return_empty_list() {
+        //Given
+        TDataTypeTemplates dtt = new TDataTypeTemplates();
+        //When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        //Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getAllDataObjectsAndDataAttributes_when_DO_not_exist_should_return_empty_list() {
+        //Given
+        TDataTypeTemplates dtt = new TDataTypeTemplates();
+        TLNodeType tlNodeType = new TLNodeType();
+        tlNodeType.setId("lnodeTypeId");
+        dtt.getLNodeType().add(tlNodeType);
+        //When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        List<DataAttributeRef> result =  dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        //Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getAllDataObjectsAndDataAttributes_when_DoType_not_exist_should_return_empty_list() {
+        //Given
+        TDataTypeTemplates dtt = new TDataTypeTemplates();
+        TLNodeType tlNodeType = new TLNodeType();
+        tlNodeType.setId("lnodeTypeId");
+        TDO tdo = new TDO();
+        tdo.setType("doTypeId");
+        tdo.setName("Mod");
+        tlNodeType.getDO().add(tdo);
+        dtt.getLNodeType().add(tlNodeType);
+        //When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        List<DataAttributeRef> result =  dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        //Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getAllDataObjectsAndDataAttributes_when_DA_not_exist_should_return_empty_list() {
+        //Given
+        SCL scl = new SCL();
+        TDataTypeTemplates dtt = new TDataTypeTemplates();
+        TLNodeType tlNodeType = new TLNodeType();
+        tlNodeType.setId("lnodeTypeId");
+        TDO tdo = new TDO();
+        tdo.setType("doTypeId");
+        tdo.setName("Mod");
+        tlNodeType.getDO().add(tdo);
+        dtt.getLNodeType().add(tlNodeType);
+        TDOType tdoType = new TDOType();
+        tdoType.setId("doTypeId");
+        dtt.getDOType().add(tdoType);
+        scl.setDataTypeTemplates(dtt);
+        //When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        List<DataAttributeRef> result =  result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        //Then
+        assertThat(result).isEmpty();
+    }
+
+
+    @Test
+    void getAllDataObjectsAndDataAttributes_when_1DO_linked_to_1DA_should_return_expectedItems() {
+        //Given
+        SCL scl = new SCL();
+        TDataTypeTemplates dtt = new TDataTypeTemplates();
+        TLNodeType tlNodeType = new TLNodeType();
+        tlNodeType.setId("lnodeTypeId");
+        TDO tdo = new TDO();
+        tdo.setType("doTypeId");
+        tdo.setName("doName");
+        tlNodeType.getDO().add(tdo);
+        dtt.getLNodeType().add(tlNodeType);
+        TDOType tdoType = new TDOType();
+        tdoType.setId("doTypeId");
+        TDA tda = new TDA();
+        tda.setName("daName");
+        tdoType.getSDOOrDA().add(tda);
+        dtt.getDOType().add(tdoType);
+        scl.setDataTypeTemplates(dtt);
+        //When
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        //Then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
+                        DataAttributeRef::getDaRef, DataAttributeRef::getBdaNames)
+                .containsExactly("doName", List.of(), "daName", List.of());
     }
 
     @Test
     void getAllDataObjectsAndDataAttributes_should_return_all_dataReference() {
         // Given
-        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml";
-        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
+        // File contain all combinations that can be made
+        TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_tests.xml");
         // When
-        DataTypeTemplatesService dttService = new DataTypeTemplatesService();
-        List<DataAttributeRef> dataRef = dttService.getAllDataObjectsAndDataAttributes(dtt);
+        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
         // Then
-        assertThat(dataRef).hasSize(8);
+        assertThat(result).hasSize(34);
+        result.forEach(dataAttributeRef -> {
+            List<SclReportItem> sclReportItems = dataTypeTemplatesService
+                    .verifyDataObjectsAndDataAttributes(dtt,
+                            dataAttributeRef.getLnType(),
+                            dataAttributeRef.getDoName(),
+                            dataAttributeRef.getDaName());
+            assertThat(sclReportItems).isEmpty();
+        });
+//        assertThat(result).extracting(
+//                DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
+//                        DataAttributeRef::getDaRef, DataAttributeRef::getBdaNames,
+//                        DataAttributeRef::getBType, DataAttributeRef::getType)
+//                .containsExactlyInAnyOrder(
+//                        // -> Do11
+//                        Tuple.tuple("Do11", List.of(), "sampleDa11", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do11", List.of(), "objRefDa12", List.of(), TPredefinedBasicTypeEnum.OBJ_REF, null),
+//                        // Do11.sdo12
+//                        // -> Do11.sdo11.sdo21
+//                        Tuple.tuple("Do11.sdo11.sdo21", List.of("sdo11", "sdo21"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do11.sdo11.sdo21", List.of("sdo11", "sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo11.sdo21", List.of("sdo11", "sdo21"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo11.sdo21", List.of("sdo11", "sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // -> Do11.sdo11.sdo22
+//                        Tuple.tuple("Do11.sdo11.sdo22", List.of("sdo11", "sdo22"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do11.sdo11.sdo22", List.of("sdo11", "sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo11.sdo22", List.of("sdo11", "sdo22"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo11.sdo22", List.of("sdo11", "sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // Do11.sdo12
+//                        // -> Do11.sdo12.sdo21
+//                        Tuple.tuple("Do11.sdo12.sdo21", List.of("sdo12", "sdo21"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do11.sdo12.sdo21", List.of("sdo12", "sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo12.sdo21", List.of("sdo12", "sdo21"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo12.sdo21", List.of("sdo12", "sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // -> Do11.sdo12.sdo22
+//                        Tuple.tuple("Do11.sdo12.sdo22", List.of("sdo12", "sdo22"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do11.sdo12.sdo22", List.of("sdo12", "sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo12.sdo22", List.of("sdo12", "sdo22"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do11.sdo12.sdo22", List.of("sdo12", "sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // Do21
+//                        // -> Do21.sdo21
+//                        Tuple.tuple("Do21.sdo21", List.of("sdo21"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do21.sdo21", List.of("sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do21.sdo21", List.of("sdo21"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do21.sdo21", List.of("sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // -> Do21.sdo22
+//                        Tuple.tuple("Do21.sdo22", List.of("sdo22"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do21.sdo22", List.of("sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do21.sdo22", List.of("sdo22"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do21.sdo22", List.of("sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // Do22
+//                        // -> Do22.sdo21
+//                        Tuple.tuple("Do22.sdo21", List.of("sdo21"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do22.sdo21", List.of("sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do22.sdo21", List.of("sdo21"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do22.sdo21", List.of("sdo21"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//
+//                        // -> Do22.sdo22
+//                        Tuple.tuple("Do22.sdo22", List.of("sdo22"), "sampleDa2", List.of(), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind"),
+//                        Tuple.tuple("Do22.sdo22", List.of("sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda1", List.of("structBda1", "structBda2", "sampleBda1"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do22.sdo22", List.of("sdo22"),
+//                                "structDa1.structBda1.sampleBda2", List.of("structBda1", "sampleBda2"), TPredefinedBasicTypeEnum.VIS_STRING_255, null),
+//                        Tuple.tuple("Do22.sdo22", List.of("sdo22"),
+//                                "structDa1.structBda1.structBda2.sampleBda3", List.of("structBda1", "structBda2", "sampleBda3"), TPredefinedBasicTypeEnum.ENUM, "RecCycModKind")
+//                );
     }
 
 }

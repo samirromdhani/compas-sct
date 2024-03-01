@@ -110,7 +110,6 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
                                     var tdaType = getDATypeByDaNameIfExist(dtt, lastDoType, structNamesRefList.get(0));
                                     tdaType.ifPresentOrElse(tdaType1 -> {
                                         if(tdaType1 instanceof TDOType) return;
-                                        System.out.println(":: DA Type found :: "+tdaType1.getId());
                                         structNamesRefList.remove();
                                         checkDATypeByBdaName(dtt, (TDAType) tdaType1, structNamesRefList, sclReportItems);
                                     }, ()-> sclReportItems.add(SclReportItem.error(null,
@@ -199,10 +198,10 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
     private <T extends TIDNaming> Optional<T> getDATypeByDaNameIfExist(TDataTypeTemplates dtt, TDOType tdoType, String daName) {
         Optional<TDA> dai = sdoOrDAService.findSDOOrDA(tdoType, TDA.class, tda -> tda.getName().equals(daName));
         if(dai.isPresent()){
-            if(dai.get().getType() == null){
-                return (Optional<T>) Optional.of(tdoType);
-            } else {
+            if(dai.get().isSetType() && dai.get().isSetBType() && dai.get().getBType().equals(TPredefinedBasicTypeEnum.STRUCT)){
                 return (Optional<T>) daTypeService.findDaType(dtt, tdaType -> tdaType.getId().equals(dai.get().getType()));
+            } else {
+                return (Optional<T>) Optional.of(tdoType);
             }
         }
         return Optional.empty();
