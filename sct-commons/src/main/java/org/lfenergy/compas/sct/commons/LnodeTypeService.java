@@ -40,10 +40,10 @@ public class LnodeTypeService {
         return tlNodeType.getDO().stream()
                 .flatMap(tdo -> {
                     dataRef.setLnType(tlNodeType.getId());
-                    dataRef.setLnClass(tlNodeType.getLnClass().get(0));
-                    dataRef.getDoName().setName(tdo.getName());
+                    if(tlNodeType.isSetLnClass()) dataRef.setLnClass(tlNodeType.getLnClass().get(0));
                     return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()))
                             .stream().flatMap(tdoType -> {
+                                dataRef.getDoName().setName(tdo.getName());
                                 dataRef.getDoName().setCdc(tdoType.getCdc());
                                 return doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef).stream();
                             });

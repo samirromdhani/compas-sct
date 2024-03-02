@@ -5,7 +5,6 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
@@ -16,7 +15,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateTestUtils.*;
 
-@Disabled
 class LnodeTypeServiceTest {
 
     @Test
@@ -88,36 +86,34 @@ class LnodeTypeServiceTest {
     @Test
     void getDataAttributeRefs_should_return_expected_dataReference() {
         //Given
-        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml";
-        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
-
-        LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        TLNodeType tdoType = lnodeTypeService.findLnodeType(dtt, tlNodeType -> tlNodeType.getId()
-                .equals("LN1")).get();
+        TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml");
+        TLNodeType tdoType = dtt.getLNodeType().stream().filter(tlNodeType -> tlNodeType.getId()
+                .equals("LNodeType0")).findFirst().get();
         //When
-        List<DataAttributeRef> list = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
+        LnodeTypeService lnodeTypeService = new LnodeTypeService();
+        List<DataAttributeRef> result = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
         //Then
-        assertThat(list).hasSize(8);
-        assertThat(list.stream().map(DataAttributeRef::getDoRef))
-                .containsExactly(
-                        "Do1.unused",
-                        "Do1.unused.otherSdo",
-                        "Do1.unused.otherSdo.otherSdo2",
-                        "Do1.sdo2",
-                        "Do1.sdo2",
-                        "Do1.sdo2",
-                        "Do1.sdo2",
-                        "Do1");
-        assertThat(list.stream().map(DataAttributeRef::getDaRef))
-                .containsExactly(
-                        "unused",
-                        "unused",
-                        "danameForotherSdo2",
-                        "da1",
-                        "da2.bda1sample",
-                        "da2.bda1Struct.bda2sample",
-                        "da2.bda1Struct.bda2Enum",
-                        "daname");
+        assertThat(result).hasSize(8).extracting(
+                        DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
+                        DataAttributeRef::getDaRef, DataAttributeRef::getBdaNames, DataAttributeRef::getBType, DataAttributeRef::getType)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple("FirstDoName", List.of(),
+                                "sampleDaName1", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName1", List.of("sdoName1"),
+                                "sampleDaName21", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName1.sdoName21", List.of("sdoName1", "sdoName21"),
+                                "sampleDaName31", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName1.sdoName21.sdoName31", List.of("sdoName1", "sdoName21", "sdoName31"),
+                                "sampleDaName41", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName2", List.of("sdoName2"),
+                                "sampleDaName11", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName2", List.of("sdoName2"),
+                                "structDaName1.sampleBdaName1", List.of("sampleBdaName1"), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName2", List.of("sdoName2"),
+                                "structDaName1.structBdaName1.sampleBdaName21", List.of("structBdaName1", "sampleBdaName21"), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple("FirstDoName.sdoName2", List.of("sdoName2"),
+                                "structDaName1.structBdaName1.enumBdaName22", List.of("structBdaName1", "enumBdaName22"), TPredefinedBasicTypeEnum.ENUM, "EnumType1")
+                );
     }
 
     @Test

@@ -4,44 +4,36 @@
 <SCL xmlns="http://www.iec.ch/61850/2003/SCL" version="2007" revision="B" release="4">
     <Header id="HeaderID" version="version" revision="Revision" toolID="toolID"/>
     <DataTypeTemplates>
-        <LNodeType id="LN1" lnClass="ANCR">
-            <DO name="Do1" type="SDO1"/>
+        <LNodeType id="LNodeType0" lnClass="ANCR">
+            <DO name="FirstDoName" type="DOType0"/>
         </LNodeType>
-        <DOType cdc="WYE" id="DO1">
-            <SDO name="sdo1" type="SDO1"/>
-            <DA name="da1" bType="BOOLEAN" fc="ST"/>
-            <DA name="unused" bType="BOOLEAN" fc="ST"/>
+        <DOType cdc="WYE" id="DOType0">
+            <SDO name="sdoName1" type="DOType1"/>
+            <SDO name="sdoName2" type="DOType2"/>
+            <DA name="sampleDaName1" bType="BOOLEAN" fc="ST"/>
         </DOType>
-        <DOType cdc="WYE" id="SDO1">
-            <SDO name="unused" type="UNUSED"/>
-            <SDO name="sdo2" type="SDO2"/>
-            <DA name="daname" bType="BOOLEAN" fc="ST"/>
+        <DOType cdc="WYE" id="DOType1">
+            <SDO name="sdoName21" type="DOType3"/>
+            <DA name="sampleDaName21" bType="BOOLEAN" fc="ST"/>
         </DOType>
-        <DOType cdc="WYE" id="SDO2">
-            <DA name="da1" bType="BOOLEAN" fc="ST"/>
-            <DA name="da2" bType="Struct" type="DA2" fc="ST"/>
+        <DOType cdc="WYE" id="DOType2">
+            <DA name="sampleDaName11" bType="BOOLEAN" fc="ST"/>
+            <DA name="structDaName1" bType="Struct" type="DAType0" fc="ST"/>
         </DOType>
-        <DOType cdc="WYE" id="UNUSED">
-            <SDO name="otherSdo" type="UNUSED2"/>
-            <DA name="unused" bType="BOOLEAN" fc="ST"/>
+        <DOType cdc="WYE" id="DOType3">
+            <SDO name="sdoName31" type="DOType4"/>
+            <DA name="sampleDaName31" bType="BOOLEAN" fc="ST"/>
         </DOType>
-        <DOType cdc="WYE" id="UNUSED2">
-            <SDO name="otherSdo2" type="UNUSED3"/>
-            <DA name="unused" bType="BOOLEAN" fc="ST"/>
+        <DOType cdc="WYE" id="DOType4">
+            <DA name="sampleDaName41" bType="BOOLEAN" fc="ST"/>
         </DOType>
-        <DOType cdc="WYE" id="UNUSED3">
-            <DA name="danameForotherSdo2" bType="BOOLEAN" fc="ST"/>
-        </DOType>
-        <DAType id="DA2">
-            <BDA name="bda1sample" bType="BOOLEAN"/>
-            <BDA name="bda1Struct" bType="Struct" type="BDA1"/>
+        <DAType id="DAType0">
+            <BDA name="sampleBdaName1" bType="BOOLEAN"/>
+            <BDA name="structBdaName1" bType="Struct" type="DAType1"/>
         </DAType>
-        <DAType id="BDA1">
-            <BDA name="bda2sample" bType="BOOLEAN"/>
-            <BDA name="bda2Enum" bType="Enum" type="EnumType1"/>
-        </DAType>
-        <DAType id="BDATEST">
-            <BDA name="bdasamplefordaname" bType="BOOLEAN"/>
+        <DAType id="DAType1">
+            <BDA name="sampleBdaName21" bType="BOOLEAN"/>
+            <BDA name="enumBdaName22" bType="Enum" type="EnumType1"/>
         </DAType>
         <EnumType id="EnumType1">
             <EnumVal ord="1">val1</EnumVal>

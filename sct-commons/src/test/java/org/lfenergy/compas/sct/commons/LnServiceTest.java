@@ -5,7 +5,6 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
@@ -160,7 +159,6 @@ class LnServiceTest {
 
 
     @Test
-    @Disabled
     void getDOAndDAInstances_should_return_when_data_from_xml_file_to_remove() {
         //Given
         SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");

@@ -5,7 +5,6 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
@@ -18,7 +17,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.lfenergy.compas.sct.commons.scl.dtt.DataTypeTemplateTestUtils.*;
 
-@Disabled
 class DoTypeServiceTest {
 
     @Test
@@ -72,68 +70,46 @@ class DoTypeServiceTest {
                 .containsExactly(TPredefinedCDCEnum.DPL, "RTE_X_X_X_48BA5C40D0913654FA5291A28C0D9716_DPL_V1.0.0");
     }
 
-
     @Test
     void getDataAttributeRefs_should_return_expected_dataReference() {
         //Given
-        String SCD_DTT_DO_SDO_DA_BDA = "/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml";
-        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
-
-        DoTypeService doTypeService = new DoTypeService();
-        TDOType tdoType = doTypeService.findDoType(dtt, tdoType1 -> tdoType1.getId()
-                .equals("SDO1")).get();
+        TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml");
+        TDOType tdoType = dtt.getDOType().stream().filter(tdoType1 -> tdoType1.getId().equals("DOType0"))
+                        .findFirst().get();
+        String DO_NAME = "FirstDoName";
 
         DataAttributeRef dataRef = new DataAttributeRef();
-        DoTypeName doTypeName = new DoTypeName();
-        doTypeName.setName("firstDONAME");
-        DaTypeName daTypeName = new DaTypeName();
+        dataRef.setLnType("LNodeType0");
+        DoTypeName doTypeName = new DoTypeName(DO_NAME);
         dataRef.setDoName(doTypeName);
+        DaTypeName daTypeName = new DaTypeName();
         dataRef.setDaName(daTypeName);
 
         //When
-        List<DataAttributeRef> list = doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef);
-        //Then
-        assertThat(list).hasSize(8);
-        assertThat(list.stream().map(DataAttributeRef::getDoRef))
-                .containsExactly(
-                        "firstDONAME.unused",
-                        "firstDONAME.unused.otherSdo",
-                        "firstDONAME.unused.otherSdo.otherSdo2",
-                        "firstDONAME.sdo2",
-                        "firstDONAME.sdo2",
-                        "firstDONAME.sdo2",
-                        "firstDONAME.sdo2",
-                        "firstDONAME");
-        assertThat(list.stream().map(DataAttributeRef::getDaRef))
-                .containsExactly(
-                        "unused",
-                        "unused",
-                        "danameForotherSdo2",
-                        "da1",
-                        "da2.bda1sample",
-                        "da2.bda1Struct.bda2sample",
-                        "da2.bda1Struct.bda2Enum",
-                        "daname");
-    }
-
-    @Test
-    void getDataAttributeRefs_should_return_all_dai() {
-        // GIVEN
-        SCL scd = SclTestMarshaller.getSCLFromFile("/scl-srv-import-ieds/ied_1_test.xml");
-        TDataTypeTemplates dtt = scd.getDataTypeTemplates();
-
         DoTypeService doTypeService = new DoTypeService();
-        TDOType tdoType = doTypeService.findDoType(dtt, tdoType1 -> tdoType1.getId()
-                .equals("DO11")).get();
-        DataAttributeRef dataRef = new DataAttributeRef();
-        DoTypeName doTypeName = new DoTypeName();
-        doTypeName.setName("firstDONAME");
-        DaTypeName daTypeName = new DaTypeName();
-        dataRef.setDoName(doTypeName);
-        dataRef.setDaName(daTypeName);
-        // When
-        List<DataAttributeRef> list = doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef);
-        // Then
-        assertThat(list).hasSize(811);
+        List<DataAttributeRef> result = doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef);
+        //Then
+        assertThat(result).hasSize(8).extracting(
+                        DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
+                        DataAttributeRef::getDaRef, DataAttributeRef::getBdaNames, DataAttributeRef::getBType, DataAttributeRef::getType)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(DO_NAME, List.of(),
+                                "sampleDaName1", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName1", List.of("sdoName1"),
+                                "sampleDaName21", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName1.sdoName21", List.of("sdoName1", "sdoName21"),
+                                "sampleDaName31", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName1.sdoName21.sdoName31", List.of("sdoName1", "sdoName21", "sdoName31"),
+                                "sampleDaName41", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName2", List.of("sdoName2"),
+                                "sampleDaName11", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName2", List.of("sdoName2"),
+                                "structDaName1.sampleBdaName1", List.of("sampleBdaName1"), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName2", List.of("sdoName2"),
+                                "structDaName1.structBdaName1.sampleBdaName21", List.of("structBdaName1", "sampleBdaName21"), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        Tuple.tuple(DO_NAME+".sdoName2", List.of("sdoName2"),
+                                "structDaName1.structBdaName1.enumBdaName22", List.of("structBdaName1", "enumBdaName22"), TPredefinedBasicTypeEnum.ENUM, "EnumType1")
+                );
     }
+
 }
