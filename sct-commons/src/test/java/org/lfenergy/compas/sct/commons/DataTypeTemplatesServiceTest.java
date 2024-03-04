@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
-import org.lfenergy.compas.sct.commons.dto.DoTypeName;
 import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 
@@ -147,10 +146,10 @@ class DataTypeTemplatesServiceTest {
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
         String dataRef = "Do.sdo1.d.antRef.bda1.bda2.bda3";
-        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
                 dtt, "LNO1", dataRef);
         // Then
-        assertThatCode(() -> dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+        assertThatCode(() -> dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
                 dtt, "LNO1", dataRef))
                 .doesNotThrowAnyException();
 
@@ -171,7 +170,7 @@ class DataTypeTemplatesServiceTest {
         TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.getDataObjectsAndDataAttributes(
+        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
                 dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
         // Then
         assertThatCode(() -> dataTypeTemplatesService.isDataObjectsAndDataAttributesExists(
@@ -317,25 +316,12 @@ class DataTypeTemplatesServiceTest {
     }
 
     @Test
-    void verifyDataObjectsAndDataAttributes_should_return_empty_report() {
-        // Given
-        TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
-        DoTypeName doTypeName = new DoTypeName("Do1.sdo1.sdo2");
-        DaTypeName daTypeName = new DaTypeName("da2.bda1.bda2");
-        // When
-        DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<SclReportItem> sclReportItems = dataTypeTemplatesService.verifyDataObjectsAndDataAttributes(dtt, "LN1", doTypeName, daTypeName);
-        // Then
-        assertThat(sclReportItems).isEmpty();
-    }
-
-    @Test
     void getAllDataObjectsAndDataAttributes_when_LNodeType_not_exist_should_return_empty_list() {
         //Given
         TDataTypeTemplates dtt = new TDataTypeTemplates();
         //When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt).toList();
         //Then
         assertThat(result).isEmpty();
     }
@@ -349,7 +335,7 @@ class DataTypeTemplatesServiceTest {
         dtt.getLNodeType().add(tlNodeType);
         //When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<DataAttributeRef> result =  dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        List<DataAttributeRef> result =  dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt).toList();
         //Then
         assertThat(result).isEmpty();
     }
@@ -367,7 +353,7 @@ class DataTypeTemplatesServiceTest {
         dtt.getLNodeType().add(tlNodeType);
         //When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<DataAttributeRef> result =  dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        List<DataAttributeRef> result =  dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt).toList();
         //Then
         assertThat(result).isEmpty();
     }
@@ -390,7 +376,7 @@ class DataTypeTemplatesServiceTest {
         scl.setDataTypeTemplates(dtt);
         //When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<DataAttributeRef> result =  result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        List<DataAttributeRef> result =  result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt).toList();
         //Then
         assertThat(result).isEmpty();
     }
@@ -417,7 +403,7 @@ class DataTypeTemplatesServiceTest {
         scl.setDataTypeTemplates(dtt);
         //When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt).toList();
         //Then
         assertThat(result).hasSize(1);
         assertThat(result.get(0)).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
@@ -432,7 +418,7 @@ class DataTypeTemplatesServiceTest {
         TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_tests.xml");
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt);
+        List<DataAttributeRef> result = dataTypeTemplatesService.getAllDataObjectsAndDataAttributes(dtt).toList();
         // Then
         assertThat(result).hasSize(34).extracting(
                 DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,

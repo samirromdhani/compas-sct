@@ -6,11 +6,8 @@ package org.lfenergy.compas.sct.commons;
 
 import org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates;
 import org.lfenergy.compas.scl2007b4.model.TLNodeType;
-import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
-import org.lfenergy.compas.sct.commons.dto.DoTypeName;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -31,12 +28,7 @@ public class LnodeTypeService {
         return getFilteredLnodeTypes(tDataTypeTemplates, tlNodeTypePredicate).findFirst();
     }
 
-    public List<DataAttributeRef> getDataAttributeRefs(TDataTypeTemplates dtt,
-                                                       TLNodeType tlNodeType)  {
-
-        DataAttributeRef dataRef = new DataAttributeRef();
-        dataRef.setDoName(new DoTypeName());
-        dataRef.setDaName(new DaTypeName());
+    public Stream<DataAttributeRef> getDataAttributes(TDataTypeTemplates dtt, TLNodeType tlNodeType, DataAttributeRef dataRef)  {
         return tlNodeType.getDO().stream()
                 .flatMap(tdo -> {
                     dataRef.setLnType(tlNodeType.getId());
@@ -47,7 +39,6 @@ public class LnodeTypeService {
                                 dataRef.getDoName().setCdc(tdoType.getCdc());
                                 return doTypeService.getDataAttributeRefs(dtt, tdoType, dataRef).stream();
                             });
-                })
-                .toList();
+                });
     }
 }

@@ -91,7 +91,9 @@ class LnodeTypeServiceTest {
                 .equals("LNodeType0")).findFirst().get();
         //When
         LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        List<DataAttributeRef> result = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
+//        List<DataAttributeRef> result = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
+        List<DataAttributeRef> result = lnodeTypeService.getDataAttributes(dtt, tdoType, new DataAttributeRef())
+                .toList();
         //Then
         assertThat(result).hasSize(8).extracting(
                         DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
@@ -127,8 +129,10 @@ class LnodeTypeServiceTest {
         TLNodeType tdoType = lnodeTypeService.findLnodeType(dtt, tlNodeType -> tlNodeType.getId()
                 .equals("LN2")).get();
         //When
-        List<DataAttributeRef> list = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
+//        List<DataAttributeRef> result = lnodeTypeService.getDataAttributeRefs(dtt, tdoType);
+        List<DataAttributeRef> result = lnodeTypeService.getDataAttributes(dtt, tdoType, new DataAttributeRef())
+                .toList();
         //Then
-        assertThat(list).hasSize(1622);
+        assertThat(result).hasSize(1622);
     }
 }

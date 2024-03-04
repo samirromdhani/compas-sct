@@ -13,6 +13,7 @@ import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.exception.ScdException;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.lfenergy.compas.sct.commons.util.CommonConstants.MOD_DO_NAME;
 import static org.lfenergy.compas.sct.commons.util.CommonConstants.STVAL_DA_NAME;
@@ -54,6 +55,77 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
                         .orElse(false))
                 .orElse(false);
     }
+
+    @Override
+    public Stream<DataAttributeRef> getAllDataObjectsAndDataAttributes(TDataTypeTemplates dtt) {
+        return dtt.getLNodeType().stream()
+                .flatMap(tlNodeType -> lnodeTypeService.getDataAttributes(dtt, tlNodeType, new DataAttributeRef()));
+    }
+
+    @Override
+    public Stream<DataAttributeRef> getFilteredDataObjectsAndDataAttributes(TDataTypeTemplates dtt, TAnyLN anyLn, DataAttributeRef filter) {
+        return lnodeTypeService.findLnodeType(dtt, tlNodeType -> tlNodeType.getId().equals(anyLn.getLnType()))
+                .stream()
+                .flatMap(tlNodeType -> lnodeTypeService.getDataAttributes(dtt, tlNodeType, filter));
+    }
+
+    @Override
+    public Optional<DataAttributeRef> findDataObjectsAndDataAttributesByDataReference(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef) throws ScdException {
+        LinkedList<String> dataRefList = new LinkedList<>(Arrays.asList(dataRef.split("\\.")));
+        if (dataRefList.size() < 2) return Optional.empty();
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setLnType(lNodeTypeId);
+        dataAttributeRef.setDoName(new DoTypeName());
+        dataAttributeRef.setDaName(new DaTypeName());
+
+        String doName = dataRefList.remove();
+        return lnodeTypeService.findLnodeType(dtt, lNodeType -> lNodeTypeId.equals(lNodeType.getId()))
+                .flatMap(lNodeType -> doService.findDo(lNodeType, tdo -> tdo.getName().equals(doName))
+                        // first DoType from DO (LNodeType)
+                        .flatMap(tdo -> doTypeService.findDoType(dtt, doType -> doType.getId().equals(tdo.getType()))
+                                .flatMap(tdoType -> {
+                                    dataAttributeRef.getDoName().setName(doName);
+                                    // last DoType from SDO (DOType) > SDO (DOType) > SDO (DOType)
+                                    TDOType lastDoType = findDOTypeBySdoName(dtt, tdoType, dataRefList, dataAttributeRef.getDoName().getStructNames());
+                                    dataAttributeRef.getDoName().setCdc(tdoType.getCdc());
+
+                                    // >> DA (DOType) > BDA (DAType) > BDA (DAType) > BDA (DAType)
+                                    dataAttributeRef.getDaName().setName(dataRefList.get(0));
+                                    return sdoOrDAService.findSDOOrDA(lastDoType, TDA.class,
+                                                    tda1 -> tda1.getName().equals(dataAttributeRef.getDaName().getName()))
+                                            .map(tda -> {
+                                                dataAttributeRef.getDaName().setFc(tda.getFc());
+                                                if(tda.getBType() != TPredefinedBasicTypeEnum.STRUCT) {
+                                                    DoTypeService.updateFromAbstractDataAttribute(tda, dataAttributeRef.getDaName());
+                                                    return Optional.of(dataAttributeRef);
+                                                }
+                                                // first BDA (DaType) from DA (DOType)
+                                                return getDATypeByDaNameIfExist(dtt, lastDoType, tda.getName())
+                                                        .flatMap(tdaType1 -> {
+                                                            // DA without child (BDA) not have reference in DAType
+                                                            if(tdaType1 instanceof TDOType) {
+                                                                return Optional.of(dataAttributeRef);
+                                                            }
+                                                            // remove DA name from struct list
+                                                            dataRefList.remove();
+                                                            // last BDA (DAType) from BDA (DAType) > BDA (DAType)
+                                                            TDAType lastDAType = findDATypeByBdaName(dtt, (TDAType) tdaType1, dataRefList, dataAttributeRef.getDaName().getStructNames());
+                                                            // last BDA
+                                                            if(dataRefList.size() != 1) return Optional.empty();
+                                                            return bdaService.findBDA(lastDAType, tbda -> tbda.getName().equals(dataRefList.getFirst()))
+                                                                    .flatMap(tbda ->{
+                                                                        if(tbda.getBType() != TPredefinedBasicTypeEnum.STRUCT) {
+                                                                            DoTypeService.updateFromAbstractDataAttribute(tbda, dataAttributeRef.getDaName());
+                                                                            return Optional.of(dataAttributeRef);
+                                                                        }
+                                                                        return Optional.empty();
+                                                                    });
+                                                        });
+                                            });
+                                })
+                        )).orElse(Optional.empty());
+    }
+
     public List<SclReportItem> isDataObjectsAndDataAttributesExists(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef) {
         List<SclReportItem> sclReportItems = new ArrayList<>();
         LinkedList<String> dataRefList = new LinkedList<>(Arrays.asList(dataRef.split("\\.")));
@@ -88,136 +160,6 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
                     sclReportItems.add(SclReportItem.error(null, "No Data Attribute found with this reference %s for LNodeType.id (%s)".formatted(dataRef, lNodeTypeId)));
                     return sclReportItems;
                 });
-    }
-
-    public List<SclReportItem> verifyDataObjectsAndDataAttributes(TDataTypeTemplates dtt, String lNodeTypeId, DoTypeName doTypeName, DaTypeName daTypeName) {
-
-        List<SclReportItem> sclReportItems = new ArrayList<>();
-        LinkedList<String> structNamesRefList = new LinkedList<>();
-        structNamesRefList.addFirst(doTypeName.getName());
-        doTypeName.getStructNames().forEach(structNamesRefList::addLast);
-        structNamesRefList.addLast(daTypeName.getName());
-        daTypeName.getStructNames().forEach(structNamesRefList::addLast);
-        if (structNamesRefList.size() < 2) {
-            sclReportItems.add(SclReportItem.error(null, "Invalid data reference %s. At least DO name and DA name are required".formatted(sclReportItems)));
-        }
-        String doName = structNamesRefList.remove();
-        return lnodeTypeService.findLnodeType(dtt, lNodeType -> lNodeTypeId.equals(lNodeType.getId()))
-                .map(lNodeType -> doService.findDo(lNodeType, tdo -> tdo.getName().equals(doName))
-                        .map(tdo -> doTypeService.findDoType(dtt, doType -> doType.getId().equals(tdo.getType()))
-                                .map(tdoType -> {
-                                    TDOType lastDoType = findDOTypeBySdoName(dtt, tdoType, structNamesRefList);
-                                    var tdaType = getDATypeByDaNameIfExist(dtt, lastDoType, structNamesRefList.get(0));
-                                    tdaType.ifPresentOrElse(tdaType1 -> {
-                                        if(tdaType1 instanceof TDOType) return;
-                                        structNamesRefList.remove();
-                                        checkDATypeByBdaName(dtt, (TDAType) tdaType1, structNamesRefList, sclReportItems);
-                                    }, ()-> sclReportItems.add(SclReportItem.error(null,
-                                            String.format("Unknown Sub Data Object SDO or Data Attribute DA (%s) in DOType.id (%s)",
-                                                    structNamesRefList.get(0), lastDoType.getId()))));
-                                    return sclReportItems;
-                                })
-                                .orElseGet(() -> {
-                                    sclReportItems.add(SclReportItem.error(null, String.format("DOType.id (%s) for DO.name (%s) not found in DataTypeTemplates", tdo.getType(), tdo.getName())));
-                                    return sclReportItems;
-                                }))
-                        .orElseGet(() -> {
-                            sclReportItems.add(SclReportItem.error(null, String.format("Unknown DO.name (%s) in DOType.id (%s)", doName, lNodeTypeId)));
-                            return sclReportItems;
-                        }))
-                .orElseGet(() -> {
-                    sclReportItems.add(SclReportItem.error(null, "No Data Attribute found with this reference %s for LNodeType.id (%s)".formatted(structNamesRefList, lNodeTypeId)));
-                    return sclReportItems;
-                });
-    }
-
-    public DataAttributeRef getDataObjectsAndDataAttributes(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef) {
-        DataAttributeRef dataAttributeRef = new DataAttributeRef();
-        LinkedList<String> dataRefList = new LinkedList<>(Arrays.asList(dataRef.split("\\.")));
-        if (dataRefList.size() < 2) {
-            throw new ScdException("Invalid data reference %s. At least DO name and DA name are required".formatted(dataRef));
-        }
-        String doName = dataRefList.remove();
-        return lnodeTypeService.findLnodeType(dtt, lNodeType -> lNodeTypeId.equals(lNodeType.getId()))
-                .map(lNodeType -> doService.findDo(lNodeType, tdo -> tdo.getName().equals(doName))
-                        .map(tdo -> doTypeService.findDoType(dtt, doType -> doType.getId().equals(tdo.getType()))
-                                .map(tdoType -> {
-                                    //DO: Setter
-                                    DoTypeName doTypeName = new DoTypeName(doName);
-                                    //last DoType finder
-                                    TDOType lastDoType = findDOTypeBySdoName(dtt, tdoType, dataRefList, doTypeName.getStructNames());
-                                    doTypeName.setCdc(tdoType.getCdc());
-                                    dataAttributeRef.setDoName(doTypeName);
-                                    //DA::Setter
-                                    DaTypeName daTypeName = new DaTypeName(dataRefList.get(0));
-                                    TDA tda = sdoOrDAService.findSDOOrDA(lastDoType, TDA.class, tda1 -> tda1.getName().equals(daTypeName.getName()))
-                                            .orElseThrow();
-                                    // FC only exist within DA
-                                    daTypeName.setFc(tda.getFc());
-                                    if(tda.getBType() != TPredefinedBasicTypeEnum.STRUCT) {
-                                        daTypeName.setBType(tda.getBType());
-                                        daTypeName.setType(tda.getType());
-                                        daTypeName.setValImport(tda.isValImport());
-                                        dataAttributeRef.setDaiValues(tda.getVal());
-                                    }
-                                    //DAType finder
-                                    var tdaType = getDATypeByDaNameIfExist(dtt, lastDoType, daTypeName.getName());
-                                    tdaType.ifPresentOrElse(tdaType1 -> {
-                                        if(tdaType1 instanceof TDOType) return;
-                                        //last DAType finder
-                                        dataRefList.remove();
-                                        TDAType lastDAType = findDATypeByBdaName(dtt, (TDAType) tdaType1, dataRefList, daTypeName.getStructNames());
-                                        //DA/BDA::Setter
-                                        TBDA tbda = bdaService.findBDA(lastDAType, bda -> bda.getName().equals(daTypeName.getStructNames().get(
-                                                daTypeName.getStructNames().size() - 1
-                                        ))).orElseThrow();
-                                        if(tbda.getBType() != TPredefinedBasicTypeEnum.STRUCT) {
-                                            daTypeName.setBType(tbda.getBType());
-                                            daTypeName.setType(tbda.getType());
-                                            daTypeName.setValImport(tbda.isValImport());
-                                            dataAttributeRef.setDaiValues(tbda.getVal());
-                                        }
-                                        dataAttributeRef.setDaName(daTypeName);
-                                    }, ()-> {
-                                        throw new ScdException(String.format("Unknown Sub Data Object SDO or Data Attribute DA (%s) in DOType.id (%s)", dataRefList.get(0), lastDoType.getId()));
-                                    });
-                                    return dataAttributeRef;
-                                })
-                                .orElseThrow(() -> new ScdException( String.format("DOType.id (%s) for DO.name (%s) not found in DataTypeTemplates", tdo.getType(), tdo.getName()))))
-                        .orElseThrow(() -> new ScdException(String.format("Unknown DO.name (%s) in DOType.id (%s)", doName, lNodeTypeId))))
-                .orElseThrow(() -> new ScdException("No Data Attribute found with this reference %s for LNodeType.id (%s)".formatted(dataRef, lNodeTypeId)));
-    }
-
-    @Override
-    public List<DataAttributeRef> getAllDataObjectsAndDataAttributes(TDataTypeTemplates dtt) {
-        return dtt.getLNodeType().stream()
-                .flatMap(tlNodeType -> lnodeTypeService.getDataAttributeRefs(dtt, tlNodeType).stream())
-                .toList();
-    }
-
-    private <T extends TIDNaming> Optional<T> getDATypeByDaNameIfExist(TDataTypeTemplates dtt, TDOType tdoType, String daName) {
-        Optional<TDA> dai = sdoOrDAService.findSDOOrDA(tdoType, TDA.class, tda -> tda.getName().equals(daName));
-        if(dai.isPresent()){
-            if(dai.get().isSetType() && dai.get().isSetBType() && dai.get().getBType().equals(TPredefinedBasicTypeEnum.STRUCT)){
-                return (Optional<T>) daTypeService.findDaType(dtt, tdaType -> tdaType.getId().equals(dai.get().getType()));
-            } else {
-                return (Optional<T>) Optional.of(tdoType);
-            }
-        }
-        return Optional.empty();
-    }
-
-    private Optional<TDAType> getDATypeByBdaName(TDataTypeTemplates dtt, TDAType tdaType, String bdaName) {
-        if(tdaType == null) return Optional.empty();
-        return bdaService.findBDA(tdaType, tbda -> tbda.getName().equals(bdaName))
-                .map(tbda ->  {
-                    if(tbda.getBType() == TPredefinedBasicTypeEnum.STRUCT) {
-                        return daTypeService.findDaType(dtt, tdaType2 -> tdaType2.getId().equals(tbda.getType()))
-                                .orElseThrow(() -> new ScdException("bdaName = "+tbda + " not exist in datype id = "+tdaType.getId()));
-                    }
-                    return tdaType;
-                })
-                .stream().findFirst();
     }
 
     private TDOType findDOTypeBySdoName(TDataTypeTemplates dtt, TDOType tdoType, List<String> sdoNames) {
@@ -264,6 +206,31 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
                     return findDATypeByBdaName(dtt, tdaType1, bdaNames, concreteList);
                 })
                 .orElse(tdaType);
+    }
+
+    private <T extends TIDNaming> Optional<T> getDATypeByDaNameIfExist(TDataTypeTemplates dtt, TDOType tdoType, String daName) {
+        Optional<TDA> dai = sdoOrDAService.findSDOOrDA(tdoType, TDA.class, tda -> tda.getName().equals(daName));
+        if(dai.isPresent()){
+            if(dai.get().isSetType() && dai.get().isSetBType() && dai.get().getBType().equals(TPredefinedBasicTypeEnum.STRUCT)){
+                return (Optional<T>) daTypeService.findDaType(dtt, tdaType -> tdaType.getId().equals(dai.get().getType()));
+            } else {
+                return (Optional<T>) Optional.of(tdoType);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<TDAType> getDATypeByBdaName(TDataTypeTemplates dtt, TDAType tdaType, String bdaName) {
+        if(tdaType == null) return Optional.empty();
+        return bdaService.findBDA(tdaType, tbda -> tbda.getName().equals(bdaName))
+                .map(tbda ->  {
+                    if(tbda.getBType() == TPredefinedBasicTypeEnum.STRUCT) {
+                        return daTypeService.findDaType(dtt, tdaType2 -> tdaType2.getId().equals(tbda.getType()))
+                                .orElseThrow(() -> new ScdException("bdaName = "+tbda + " not exist in datype id = "+tdaType.getId()));
+                    }
+                    return tdaType;
+                })
+                .stream().findFirst();
     }
 
 }

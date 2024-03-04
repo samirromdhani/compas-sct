@@ -6,17 +6,17 @@ package org.lfenergy.compas.sct.commons;
 
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
-import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 import org.lfenergy.compas.sct.commons.util.ActiveStatus;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.lfenergy.compas.sct.commons.testhelpers.DataTypeUtils.*;
@@ -92,17 +92,16 @@ class LnServiceTest {
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("Do","sdo1", "d")),
                 new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3")),
-                "new value"
+                "new value",null
         );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
         //When
         LnService lnService = new LnService();
-        boolean exist = lnService.isDOAndDAInstanceExists(tAnyLN, doTypeName, daTypeName);
+        Optional<TDAI> optionalTDAI = lnService.isDOAndDAInstanceExists(tAnyLN, doTypeName, daTypeName);
         //Then
-        assertThat(exist).isTrue();
+        assertThat(optionalTDAI).isPresent();
     }
-
 
     @Test
     void isDOAndDAInstanceExists_should_return_false_when_DO_and_DA_instances_not_exists() {
@@ -110,94 +109,79 @@ class LnServiceTest {
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("Do","sdo1", "d")),
                 new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3")),
-                "new value"
+                "new value",null
         );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
         DaTypeName daTypeName = new DaTypeName("antRef.unknown.bda2.bda3");
         //When
         LnService lnService = new LnService();
-        boolean exist = lnService.isDOAndDAInstanceExists(tAnyLN, doTypeName, daTypeName);
+        Optional<TDAI> optionalTDAI = lnService.isDOAndDAInstanceExists(tAnyLN, doTypeName, daTypeName);
         //Then
-        assertThat(exist).isFalse();
+        assertThat(optionalTDAI).isPresent();
+    }
+
+    /**
+     * TEST TODO when FC = SG OR SE => instance should be with setting group => AccessPont Check
+     */
+    @ParameterizedTest
+    @CsvSource(value = {"null:false", "false:false", "true:true"}, delimiter = ':')
+    void completeDataObjAndAttr_should_complete_when_no_struct(Boolean input, Boolean expected) {
+        //Given
+        TIED tied = new TIED();
+        TAnyLN tAnyLN = initDOAndDAInstances(
+                new LinkedList<>(List.of("Do")),
+                new LinkedList<>(List.of("Da")),
+                "new value", input
+        );
+        DoTypeName doTypeName = new DoTypeName("Do");
+        DaTypeName daTypeName = new DaTypeName("Da");
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setDaName(daTypeName);
+        dataAttributeRef.setDoName(doTypeName);
+        //When
+        LnService lnService = new LnService();
+        lnService.completeDataObjectsAndDataAttribute(tied, "ldInst", tAnyLN, dataAttributeRef);
+        //Then
+        assertThat(dataAttributeRef.isValImport()).isEqualTo(expected);
     }
 
     @Test
-    void getDOAndDAInstances_should_return_when_ADF() {
+    void completeDataObjAndAttr_should_not_complete_when_not_found() {
         //Given
+        TIED tied = new TIED();
+        TAnyLN tAnyLN = new LN0();
+        DoTypeName doTypeName = new DoTypeName("Do");
+        DaTypeName daTypeName = new DaTypeName("Da");
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setDaName(daTypeName);
+        dataAttributeRef.setDoName(doTypeName);
+        //When
+        LnService lnService = new LnService();
+        lnService.completeDataObjectsAndDataAttribute(tied, "ldInst",  tAnyLN, dataAttributeRef);
+        //Then
+        assertThat(dataAttributeRef.isValImport()).isFalse();//initialValue
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null:false", "false:false", "true:true"}, delimiter = ':')
+    void completeDataObjAndAttr_should_complete_when_struct(Boolean input, Boolean expected) {
+        //Given
+        TIED tied = new TIED();
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("Do","sdo1", "d")),
                 new LinkedList<>(List.of("antRef","bda1", "bda2", "bda3")),
-                "new value"
+                "new value", input
         );
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
-        doTypeName.setCdc(TPredefinedCDCEnum.WYE);
         DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
-        daTypeName.setFc(TFCEnum.ST);
-        daTypeName.setBType(TPredefinedBasicTypeEnum.ENUM);
-        daTypeName.setValImport(true);
-
         DataAttributeRef dataAttributeRef = new DataAttributeRef();
-        dataAttributeRef.setDoName(doTypeName);
         dataAttributeRef.setDaName(daTypeName);
+        dataAttributeRef.setDoName(doTypeName);
         //When
         LnService lnService = new LnService();
-        List<SclReportItem> sclReportItems = lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef);
+        lnService.completeDataObjectsAndDataAttribute(tied, "ldInst",  tAnyLN, dataAttributeRef);
         //Then
-        assertThat(sclReportItems).isEmpty();
-        assertThat(dataAttributeRef.getDoRef()).isEqualTo("Do.sdo1.d");
-        assertThat(dataAttributeRef.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
-        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(true);
-        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(true);
-        assertThat(dataAttributeRef.getDoName())
-                .usingRecursiveComparison()
-                .isEqualTo(doTypeName);
-        assertThat(dataAttributeRef.getDaName())
-                .usingRecursiveComparison()
-                .ignoringFields("valImport","daiValues")
-                .isEqualTo(daTypeName);
-    }
-
-
-    @Test
-    void getDOAndDAInstances_should_return_when_data_from_xml_file_to_remove() {
-        //Given
-        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
-        TAnyLN tAnyLN = scd.getIED().stream()
-                .filter(tied -> tied.getName().equals("IED_NAME")).findFirst().get()
-                .getAccessPoint()
-                .get(0)
-                .getServer()
-                .getLDevice().stream()
-                .filter(tlDevice -> tlDevice.getInst().equals("LD_INS1")).findFirst()
-                .get()
-                .getLN0();
-        DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
-        doTypeName.setCdc(TPredefinedCDCEnum.WYE);
-        DaTypeName daTypeName = new DaTypeName("antRef.bda1.bda2.bda3");
-        daTypeName.setFc(TFCEnum.ST);
-        daTypeName.setBType(TPredefinedBasicTypeEnum.ENUM);
-        daTypeName.setValImport(true);
-
-        DataAttributeRef dataAttributeRef = new DataAttributeRef();
-        dataAttributeRef.setDoName(doTypeName);
-        dataAttributeRef.setDaName(daTypeName);
-
-        //When
-        LnService lnService = new LnService();
-        List<SclReportItem> sclReportItems = lnService.getDOAndDAInstances(tAnyLN, dataAttributeRef);
-        //Then
-        assertThat(sclReportItems).isEmpty();
-        assertThat(dataAttributeRef.getDoRef()).isEqualTo("Do.sdo1.d");
-        assertThat(dataAttributeRef.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
-        assertThat(dataAttributeRef.getDaName().isValImport()).isEqualTo(true);
-        assertThat(dataAttributeRef.getDaName().isUpdatable()).isEqualTo(true);
-        assertThat(dataAttributeRef.getDoName())
-                .usingRecursiveComparison()
-                .isEqualTo(doTypeName);
-        assertThat(dataAttributeRef.getDaName())
-                .usingRecursiveComparison()
-                .ignoringFields("valImport","daiValues")
-                .isEqualTo(daTypeName);
+        assertThat(dataAttributeRef.isValImport()).isEqualTo(expected);
     }
 
     @Test
@@ -264,13 +248,74 @@ class LnServiceTest {
                 .getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getVal().get(0).getValue()).isEqualTo("new value");
     }
 
+    public static Collection<Object> testValImportValues() {
+        return Arrays.asList(new Object[][] {
+                { null, true, false, false },
+                { null, false, false, false },
+                { false, false, true, false },
+                { false, true, true, true },
+                { true, false, true, false },
+                { true, true, true, true }
+        });
+    }
+    @ParameterizedTest
+    @MethodSource("testValImportValues")
+    void updateOrCreateDOAndDAInstances_should_complete_DO_and_DA_instances_modification(Boolean existingValImportState,
+                                                                                         Boolean givenValImportState,
+                                                                                         Boolean expectedIsSetValImport,
+                                                                                         Boolean expectedIsValImportValue) {
+        //Given
+        TAnyLN tAnyLN = initDOAndDAInstances(
+                new LinkedList<>(List.of("DoName1", "SdoName1")),
+                new LinkedList<>(List.of("DaName2", "BdaName1")),
+                "dai value",existingValImportState
+        );
+        DoTypeName doTypeName = new DoTypeName("DoName1.SdoName1");
+        DaTypeName daTypeName = new DaTypeName("DaName2.BdaName1");
+        daTypeName.getDaiValues().put(0L, "new dai value");
+        daTypeName.setValImport(givenValImportState);
+        DataAttributeRef dataAttributeRef = createDataAttributeRef(doTypeName, daTypeName);
+        //When
+        LnService lnService = new LnService();
+        lnService.updateOrCreateDOAndDAInstances(tAnyLN, dataAttributeRef);
+
+        //Then
+        // SDI and DAI already exist
+        assertThat(tAnyLN.getDOI()).hasSize(1);
+        assertThat(tAnyLN.getDOI().get(0).getName()).isEqualTo("DoName1");
+        assertThat(tAnyLN.getDOI().get(0).getSDIOrDAI()).hasSize(1);
+        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getName()).isEqualTo("SdoName1");
+        assertThat((( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
+        //final DAI
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getName()).isEqualTo("DaName2");
+        assertThat((( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0)).getSDIOrDAI()).hasSize(1);
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getName()).isEqualTo("BdaName1");
+        // ==> valImport Set
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).isSetValImport()).isEqualTo(expectedIsSetValImport);
+        // ==> valImport Value
+        if(expectedIsSetValImport) {
+            assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                    .getSDIOrDAI().get(0)).isValImport()).isEqualTo(expectedIsValImportValue);
+        }
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getVal()).hasSize(1);
+        // ==> DAI value
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getVal().get(0).getValue()).isEqualTo("new dai value");
+        assertThat((( TDAI )(( TSDI )(( TSDI )tAnyLN.getDOI().get(0).getSDIOrDAI().get(0)).getSDIOrDAI().get(0))
+                .getSDIOrDAI().get(0)).getVal().get(0).isSetSGroup()).isFalse();
+    }
+
+
     @Test
     void updateOrCreateDOAndDAInstances_should_complete_DO_and_DA_instances_creation() {
         //Given
         TAnyLN tAnyLN = initDOAndDAInstances(
                 new LinkedList<>(List.of("DoName1","SdoName1", "SdoName2")),
                 new LinkedList<>(List.of("DaName1","BdaName1", "BdaName2")),
-                "dai value"
+                "dai value",true
         );
         DoTypeName doTypeName = new DoTypeName("DoName1.SdoName1");
         DaTypeName daTypeName = new DaTypeName("DaName2.BdaName1");
@@ -351,7 +396,11 @@ class LnServiceTest {
         return createSDIByStructName(createSDIFromSDI(tsdi, structNames.getFirst()), structNames);
     }
 
-    private TAnyLN initDOAndDAInstances(LinkedList<String> doInstances, LinkedList<String> daInstances, String daiVal){
+    private TAnyLN initDOAndDAInstances(LinkedList<String> doInstances,
+                                        LinkedList<String> daInstances,
+                                        String daiVal,
+                                        Boolean valImport){
+        System.out.println("valImport "+valImport);
         assertThat(doInstances.size()).isGreaterThanOrEqualTo(1);
         assertThat(daInstances.size()).isGreaterThanOrEqualTo(1);
         LinkedList<String> structInstances = new LinkedList<>(doInstances);
@@ -369,6 +418,7 @@ class LnServiceTest {
                 TVal tVal = new TVal();
                 tVal.setValue(daiVal);
                 dai.getVal().add(tVal);
+                if (valImport != null) dai.setValImport(valImport);
                 lastSDI.getSDIOrDAI().add(dai);
             }
         } else
@@ -378,6 +428,7 @@ class LnServiceTest {
             TVal tVal = new TVal();
             tVal.setValue(daiVal);
             dai.getVal().add(tVal);
+            if (valImport != null) dai.setValImport(valImport);
             tdoi.getSDIOrDAI().add(dai);
         }
         tln0.getDOI().add(tdoi);

@@ -5,6 +5,7 @@
 package org.lfenergy.compas.sct.commons;
 
 import org.lfenergy.compas.scl2007b4.model.*;
+import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 
 import java.util.ArrayList;
@@ -31,22 +32,19 @@ public class DoTypeService {
 
     public List<DataAttributeRef> getDataAttributeRefs(TDataTypeTemplates dtt, TDOType tdoType, DataAttributeRef dataRef) {
         List<DataAttributeRef> result = new ArrayList<>();
-        // DA -> BDA -> BDA -> BDA..
+        // DA -> BDA -> BDA..
         tdoType.getSDOOrDA().stream().filter(tUnNaming -> tUnNaming.getClass().equals(TDA.class)).map(TDA.class::cast).toList()
                 .forEach(tda -> {
                     DataAttributeRef newDataObjectRef = DataAttributeRef.copyFrom(dataRef);
                     newDataObjectRef.getDaName().setName(tda.getName());
                     if(tda.isSetFc()) newDataObjectRef.getDaName().setFc(tda.getFc());
-                    if(tda.isSetValImport()) newDataObjectRef.getDaName().setValImport(tda.isValImport());
 
                     // STRUCT type (BType=STRUCT) refer to BDA, otherwise it is DA
                     if(tda.isSetBType() && tda.getBType().equals(TPredefinedBasicTypeEnum.STRUCT)) {
                         daTypeService.findDaType(dtt, tdaType -> tda.isSetType() && tdaType.getId().equals(tda.getType()))
                                 .ifPresent(nextDaType -> result.addAll(getDataAttributesFromBDA(dtt, nextDaType, newDataObjectRef)));
                     } else {
-                        if(tda.isSetType()) newDataObjectRef.getDaName().setType(tda.getType());
-                        if(tda.isSetBType()) newDataObjectRef.getDaName().setBType(tda.getBType());
-
+                        updateFromAbstractDataAttribute(tda, newDataObjectRef.getDaName());
                         result.add(newDataObjectRef);
                     }
                 });
@@ -66,22 +64,26 @@ public class DoTypeService {
     private List<DataAttributeRef> getDataAttributesFromBDA(TDataTypeTemplates dtt, TDAType tdaType1, DataAttributeRef dataAttributeRef) {
         List<DataAttributeRef> result = new ArrayList<>();
         // BDA -> BDA -> BDA..
-        tdaType1.getBDA().forEach(bda -> {
+        tdaType1.getBDA().forEach(tbda -> {
             DataAttributeRef newDataAttributeRef = DataAttributeRef.copyFrom(dataAttributeRef);
-            newDataAttributeRef.getDaName().getStructNames().add(bda.getName());
-            if(bda.isSetValImport()) newDataAttributeRef.getDaName().setValImport(bda.isValImport());
+            newDataAttributeRef.getDaName().getStructNames().add(tbda.getName());
 
             // STRUCT type (BType=STRUCT) refer to complex BDA object, otherwise it is kind of DA object
-            if(bda.isSetType() && bda.getBType().equals(TPredefinedBasicTypeEnum.STRUCT)){
-                daTypeService.findDaType(dtt, tdaType -> bda.isSetType() && tdaType.getId().equals(bda.getType()))
+            if(tbda.isSetType() && tbda.getBType().equals(TPredefinedBasicTypeEnum.STRUCT)){
+                daTypeService.findDaType(dtt, tdaType -> tbda.isSetType() && tdaType.getId().equals(tbda.getType()))
                         .ifPresent(nextDaType -> result.addAll(getDataAttributesFromBDA(dtt, nextDaType, newDataAttributeRef)));
             } else {
-                if(bda.isSetType()) newDataAttributeRef.getDaName().setType(bda.getType());
-                if(bda.isSetBType()) newDataAttributeRef.getDaName().setBType(bda.getBType());
-
+                updateFromAbstractDataAttribute(tbda, newDataAttributeRef.getDaName());
                 result.add(newDataAttributeRef);
             }
         });
         return result;
+    }
+
+    public static <T extends TAbstractDataAttribute> void updateFromAbstractDataAttribute(T daOrBda, DaTypeName daTypeName) {
+        if(daOrBda.isSetType()) daTypeName.setType(daOrBda.getType());
+        if(daOrBda.isSetBType()) daTypeName.setBType(daOrBda.getBType());
+        if(daOrBda.isSetValImport()) daTypeName.setValImport(daOrBda.isValImport());
+        if(daOrBda.isSetVal()) daTypeName.addDaiValues(daOrBda.getVal());
     }
 }

@@ -4,24 +4,21 @@
 
 package org.lfenergy.compas.sct.commons.api;
 
+import org.lfenergy.compas.scl2007b4.model.TAnyLN;
 import org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates;
-import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
-import org.lfenergy.compas.sct.commons.dto.DoTypeName;
-import org.lfenergy.compas.sct.commons.dto.SclReportItem;
+import org.lfenergy.compas.sct.commons.exception.ScdException;
 
-import java.util.List;
+import java.util.stream.Stream;
 
 public interface DataTypeTemplateReader {
 
     boolean isDoModAndDaStValExist(TDataTypeTemplates dtt, String lNodeTypeId);
 
-    List<SclReportItem> isDataObjectsAndDataAttributesExists(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef);
+    Stream<DataAttributeRef> getAllDataObjectsAndDataAttributes(TDataTypeTemplates tDataTypeTemplates);
 
-    List<SclReportItem> verifyDataObjectsAndDataAttributes(TDataTypeTemplates dtt, String lNodeTypeId, DoTypeName doTypeName, DaTypeName daTypeName);
+    Stream<DataAttributeRef> getFilteredDataObjectsAndDataAttributes(TDataTypeTemplates dtt, TAnyLN anyLn, DataAttributeRef filter);
 
-    DataAttributeRef getDataObjectsAndDataAttributes(TDataTypeTemplates dtt, String lNodeTypeId, String dataRef);
-
-    List<DataAttributeRef> getAllDataObjectsAndDataAttributes(TDataTypeTemplates dtt);
+    DataAttributeRef findDataObjectsAndDataAttributesByDataReference(TDataTypeTemplates dtt, String lNodeTypeId, String dataAttributeRef) throws ScdException;
 
 }

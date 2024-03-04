@@ -4,6 +4,7 @@
 
 package org.lfenergy.compas.sct.commons;
 
+import org.apache.commons.lang3.StringUtils;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.api.SclElementsProvider;
 import org.lfenergy.compas.sct.commons.dto.*;
@@ -15,16 +16,23 @@ import org.lfenergy.compas.sct.commons.scl.dtt.EnumTypeAdapter;
 import org.lfenergy.compas.sct.commons.scl.ied.*;
 import org.lfenergy.compas.sct.commons.scl.ldevice.LDeviceAdapter;
 import org.lfenergy.compas.sct.commons.scl.ln.AbstractLNAdapter;
+import org.lfenergy.compas.sct.commons.scl.ln.LnKey;
+import org.lfenergy.compas.sct.commons.util.Utils;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SclElementsProviderService implements SclElementsProvider {
 
+    private static final String MESSAGE_IED_NAME_NOT_FOUND = "IED.name '%s' not found in SCD";
+    private static final String MESSAGE_LDEVICE_INST_NOT_FOUND = "LDevice.inst '%s' not found in IED '%s'";
+
     private final IedService iedService = new IedService();
     private final LdeviceService ldeviceService = new LdeviceService();
-    private final LnodeTypeService lnodeTypeService = new LnodeTypeService();
+    private final DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
+    private final LnService lnService = new LnService();
 
     @Override
     public List<SubNetworkDTO> getSubnetwork(SCL scd) throws ScdException {
@@ -96,38 +104,26 @@ public class SclElementsProviderService implements SclElementsProvider {
                 .toList();
     }
 
-    @Override
     public Set<DataAttributeRef> getDAI(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef, boolean updatable) throws ScdException {
-        SclRootAdapter sclRootAdapter = new SclRootAdapter(scd);
-        IEDAdapter iedAdapter = sclRootAdapter.getIEDAdapterByName(iedName);
-        LDeviceAdapter lDeviceAdapter = iedAdapter.getLDeviceAdapterByLdInst(ldInst);
-        return lDeviceAdapter.getDAI(dataAttributeRef, updatable);
+        return iedService.findIed(scd, tied -> tied.getName().equals(iedName))
+                .map(tied1 -> ldeviceService.findLdevice(tied1, tlDevice -> tlDevice.getInst().equals(ldInst))
+                        .map(tlDevice -> Stream.concat(tlDevice.getLN().stream(), Stream.of(tlDevice.getLN0()))
+                                .filter(anyLN -> tAnyLNPredicate.test(anyLN, dataAttributeRef))
+                                .flatMap(tAnyLN -> dataTypeTemplatesService.getFilteredDataObjectsAndDataAttributes(scd.getDataTypeTemplates(), tAnyLN, LnKey.updateDataRef(tAnyLN, dataAttributeRef))
+                                        .peek(dataRef -> lnService.completeDataObjectsAndDataAttribute(tied1, tlDevice.getInst(), tAnyLN, dataRef)))
+                                .filter(dataRef -> (!updatable || dataRef.isUpdatable()))
+                                .collect(Collectors.toSet()))
+                        .orElseThrow(() -> new ScdException(String.format(MESSAGE_LDEVICE_INST_NOT_FOUND, ldInst, iedName))))
+                .orElseThrow(() -> new ScdException(String.format(MESSAGE_IED_NAME_NOT_FOUND, iedName)));
     }
 
-    @Override
-    public List<DataAttributeRef> getDAI2(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef, boolean updatable) throws ScdException {
-        return iedService.findIed(scd, tied -> tied.getName().equals(iedName))
-                .flatMap(tied -> ldeviceService.findLdevice(tied, tlDevice1 -> tlDevice1.getInst().equals(ldInst)))
-                .stream()
-                .flatMap(tlDevice ->
-                        Stream.of(tlDevice.getLN().stream(), tlDevice.getLN0())
-                                .flatMap(tAnyLN -> {
-                                    String lnType = null;
-                                    if(tAnyLN instanceof TLN0 ln0){
-                                        lnType = ln0.getLnType();
-                                    }
-                                    if(tAnyLN instanceof TLN ln ){
-                                        lnType = ln.getLnType();
-                                    }
-                                    String finalLnType = lnType;
-                                    return lnodeTypeService.findLnodeType(scd.getDataTypeTemplates(),
-                                                    tlNodeType -> tlNodeType.getId().equals(finalLnType))
-                                  .stream()
-                                  .flatMap(tlNodeType -> lnodeTypeService.getDataAttributeRefs(
-                                          scd.getDataTypeTemplates(), tlNodeType)
-                                          .stream());
-                                })).toList();
-    }
+    private final BiPredicate<TAnyLN, DataAttributeRef> tAnyLNPredicate = (anyLN, dataRef) ->
+            StringUtils.isBlank(dataRef.getLnClass())
+                    || (dataRef.getLnClass().equals(TLLN0Enum.LLN_0.value()) && (anyLN instanceof TLN0))
+                    || anyLN instanceof TLN ln
+                    && Utils.lnClassEquals(ln.getLnClass(), dataRef.getLnClass())
+                    && ln.getInst().equals(dataRef.getLnInst())
+                    && Utils.equalsOrBothBlank(dataRef.getPrefix(), ln.getPrefix());
 
     @Override
     public Set<EnumValDTO> getEnumTypeValues(SCL scd, String idEnum) throws ScdException {

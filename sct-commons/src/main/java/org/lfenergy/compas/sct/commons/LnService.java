@@ -10,10 +10,10 @@ import org.lfenergy.compas.sct.commons.api.LNEditor;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.dto.DoTypeName;
-import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.util.ActiveStatus;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.lfenergy.compas.sct.commons.util.CommonConstants.MOD_DO_NAME;
@@ -59,7 +59,6 @@ public class LnService implements LNEditor {
                         .map(TVal::getValue))
                 .map(ActiveStatus::fromValue);
     }
-
     public Stream<TAnyLN> getActiveLns(TLDevice tlDevice) {
         LN0 ln0 = tlDevice.getLN0();
         Stream<TLN> tlnStream = tlDevice.getLN()
@@ -69,11 +68,10 @@ public class LnService implements LNEditor {
         return Stream.concat(ln0Stream, tlnStream);
     }
 
-    @Override
-    public boolean isDOAndDAInstanceExists(TAnyLN tAnyLN, DoTypeName doTypeName, DaTypeName daTypeName) {
-        return tAnyLN.getDOI().stream().filter(doi -> doTypeName.getName().equals(doi.getName()))
+    public Optional<TDAI> isDOAndDAInstanceExists(TAnyLN anyLN, DoTypeName doTypeName, DaTypeName daTypeName) {
+        return anyLN.getDOI().stream().filter(doi -> doTypeName.getName().equals(doi.getName()))
                 .findFirst()
-                .map(doi -> {
+                .flatMap(doi -> {
                     LinkedList<String> structNamesList = new LinkedList<>(doTypeName.getStructNames());
                     structNamesList.addLast(daTypeName.getName());
                     daTypeName.getStructNames().forEach(structNamesList::addLast);
@@ -92,160 +90,74 @@ public class LnService implements LNEditor {
                                         return lastDsi.getSDIOrDAI().stream()
                                                 .filter(dai -> dai.getClass().equals(TDAI.class))
                                                 .map(TDAI.class::cast)
-                                                .filter(dai -> dai.getName().equals(structNamesList.get(0)))
+                                                .filter(dai -> dai.getName().equals(structNamesList.getFirst()))
                                                 .findFirst();
                                     }
-                                    return Optional.empty();
+                                    return Optional.of(new TDAI());
                                 })
-                                .isPresent();
+                                .stream().findFirst();
                     } else if(structNamesList.size() == 1){
                         return doi.getSDIOrDAI().stream()
                                 .filter(unNaming -> unNaming.getClass().equals(TDAI.class))
                                 .map(TDAI.class::cast)
-                                .anyMatch(dai -> dai.getName().equals(structNamesList.get(0)));
+                                .filter(dai -> dai.getName().equals(structNamesList.getFirst()))
+                                .findFirst();
                     }
-                    return false;
-                })
-                .orElse(false);
+                    return Optional.empty();
+                });
     }
 
     @Override
     public void updateOrCreateDOAndDAInstances(TAnyLN tAnyLN, DataAttributeRef dataAttributeRef) {
         createDoiSdiDaiChainIfNotExists(tAnyLN, dataAttributeRef.getDoName(), dataAttributeRef.getDaName())
                 .ifPresent(tdai -> {
-                    for (Map.Entry<Long, String> mapVal : dataAttributeRef.getDaName().getDaiValues().entrySet()) {
-                        if (mapVal.getKey() != null && mapVal.getKey() != 0L) {
+                    Map<Long,String> daiValMap = dataAttributeRef.getDaName().getDaiValues();
+                    if(daiValMap.isEmpty()) return;
+                    // Here it's a convention criteria to check if DAI had to have list of values in each-one there is a setting group
+                    // If 0 given as key that means sample value (without settings group) will be created/updated
+                    // for more details see DaTypeName#addDaiValues
+                    if(daiValMap.keySet().stream().anyMatch(key -> key.equals(0L))){
+                        String value = daiValMap.entrySet().stream().findFirst().get().getValue();
+                        tdai.getVal().stream().findFirst()
+                                .ifPresentOrElse(tVal -> tVal.setValue(value),
+                                        () -> tdai.getVal().add(newVal(value)));
+                    } else {
+                        for (Map.Entry<Long, String> mapVal : daiValMap.entrySet()) {
                             tdai.getVal().stream()
                                     .filter(tValElem -> tValElem.isSetSGroup() && mapVal.getKey().equals(tValElem.getSGroup()))
                                     .findFirst()
-                                    .ifPresentOrElse(
-                                            tVal -> tVal.setValue(mapVal.getValue()),
+                                    .ifPresentOrElse(tVal -> tVal.setValue(mapVal.getValue()),
                                             () -> tdai.getVal().add(newVal(mapVal.getValue(), mapVal.getKey())));
-                        } else {
-                            tdai.getVal().stream().findFirst()
-                                    .ifPresentOrElse(
-                                            tVal -> tVal.setValue(mapVal.getValue()),
-                                            () -> tdai.getVal().add(newVal(mapVal.getValue())));
                         }
-            }
+                    }
         });
     }
 
-    @Override
-    public List<SclReportItem> getDOAndDAInstances(TAnyLN tAnyLN, DataAttributeRef dataAttributeRef) {
-        List<SclReportItem> sclReportItems = new ArrayList<>();
-        return tAnyLN.getDOI().stream().filter(doi -> dataAttributeRef.getDoName().getName().equals(doi.getName()))
-                .findFirst()
-                .map(doi -> {
-                    LinkedList<String> structNamesList = new LinkedList<>(dataAttributeRef.getDoName().getStructNames());
-                    structNamesList.addLast(dataAttributeRef.getDaName().getName());
-                    dataAttributeRef.getDaName().getStructNames().forEach(structNamesList::addLast);
-                    if(structNamesList.size() > 1) {
-                        String firstSDIName = structNamesList.remove();
-                        return doi.getSDIOrDAI().stream()
-                                .filter(sdi -> sdi.getClass().equals(TSDI.class))
-                                .map(TSDI.class::cast)
-                                .filter(sdi -> sdi.getName().equals(firstSDIName))
-                                .findFirst()
-                                .map(intermediateSdi -> findSDIByStructName(intermediateSdi, structNamesList))
-                                .stream()
-                                .findFirst()
-                                .map(lastDsi -> {
-                                    if (structNamesList.size() == 1) {
-                                        lastDsi.getSDIOrDAI().stream()
-                                                .filter(dai -> dai.getClass().equals(TDAI.class))
-                                                .map(TDAI.class::cast)
-                                                .filter(dai -> dai.getName().equals(structNamesList.get(0)))
-                                                .findFirst()
-                                                .ifPresentOrElse(tdai1 -> checkAndCompleteDataAttribute(tdai1, dataAttributeRef.getDaName()), ()-> {
-                                                    log.warn("Missing DAI.name=({}) not found in SDI.name=({})",
-                                                            structNamesList.get(0), lastDsi.getName());
-                                                    sclReportItems.add(SclReportItem.error(null,
-                                                            String.format("DAI.name=(%s) not found in SDI.name=(%s)",
-                                                                    structNamesList.get(0), lastDsi.getName())));
-                                                });
-                                    } else {
-                                        log.warn("Missing DataAttributes in SDI.name=({})", lastDsi.getName());
-                                        sclReportItems.add(SclReportItem.error(null,
-                                                String.format("missing DataAttribute in SDI.name=(%s)", lastDsi.getName())));
-                                    }
-                                    return sclReportItems;
-                                })
-                                .orElseGet(() -> {
-                                    log.warn("Missing SubData Object Instance SDI or Data Attribute Instance DAI ({}) in DOI.name ({})",
-                                            dataAttributeRef.getDoName().getStructNames(), doi.getName());
-                                    sclReportItems.add(SclReportItem.error(null,
-                                            String.format("Missing SubData Object Instance SDI or Data Attribute Instance DAI (%s) in DOI.name (%s)",
-                                                    dataAttributeRef.getDoName().getStructNames(), doi.getName())));
-                                    return sclReportItems;
-                                });
-                    } else if(structNamesList.size() == 1){
-                        doi.getSDIOrDAI().stream()
-                                .filter(unNaming -> unNaming.getClass().equals(TDAI.class))
-                                .map(TDAI.class::cast)
-                                .filter(dai -> dai.getName().equals(structNamesList.get(0)))
-                                .findFirst()
-                                .ifPresentOrElse(
-                                        dai ->  checkAndCompleteDataAttribute(dai, dataAttributeRef.getDaName()),
-                                        () -> {
-                                            log.warn("Missing DAI.name=({}) not found in DOI.name=({})", structNamesList.get(0), doi.getName());
-                                            sclReportItems.add(SclReportItem.error(null,
-                                                    String.format("DAI.name=(%s) not found in DOI.name=(%s)", structNamesList.get(0), doi.getName())));
-                                        });
-                        return sclReportItems;
-                    }
-                    return sclReportItems;
-                })
-                .orElseGet(() -> {
-                    log.warn("DOI.name=({}) not found in LN.type=({})", dataAttributeRef.getDoName(), tAnyLN.getLnType());
-                    sclReportItems.add(SclReportItem.error(null,String.format("DOI.name=(%s) not found in LN.type=(%s)",
-                            dataAttributeRef.getDoName(), tAnyLN.getLnType())));
-                    return sclReportItems;
+    public void completeDataObjectsAndDataAttribute(TIED tied, String ldInst, TAnyLN anyLN, DataAttributeRef dataRef) {
+        isDOAndDAInstanceExists(anyLN, dataRef.getDoName(), dataRef.getDaName())
+                .ifPresent(tdai -> {
+                     if(tdai.isSetVal()) dataRef.setDaiValues(tdai.getVal());
+                    if (dataRef.getFc() == TFCEnum.SG || dataRef.getFc() == TFCEnum.SE) {
+                        boolean hasSgGroup = tdai.getVal().stream().anyMatch(tVal -> tVal.isSetSGroup() && tVal.getSGroup() > 0);
+                        if(hasSgGroup) {
+                            boolean isIedHasConfSG = tied.isSetAccessPoint() &&
+                                    tied.getAccessPoint().stream()
+                                            .filter(tAccessPoint ->  tAccessPoint.getServer() != null
+                                                    && tAccessPoint.getServer().getLDevice().stream()
+                                                    .anyMatch(tlDevice -> tlDevice.getInst().equals(ldInst)))
+                                            .anyMatch(tAccessPoint -> tAccessPoint.isSetServices()
+                                                    && tAccessPoint.getServices() != null
+                                                    && tAccessPoint.getServices().getSettingGroups() != null
+                                                    && tAccessPoint.getServices().getSettingGroups().getConfSG() != null);
+                            dataRef.getDaName().setValImport((!tdai.isSetValImport() || tdai.isValImport()) && isIedHasConfSG);
+                        } else {
+                            dataRef.getDaName().setValImport(false);
+                            log.warn("Inconsistency in the SCD file - DAI= " +tdai.getName()
+                                    +" with fc= " +dataRef.getFc().value() +" must have a sGroup attribute");
+                        }
+                    } else if (tdai.isSetValImport()) dataRef.getDaName().setValImport(tdai.isValImport());
                 });
     }
-
-    private void checkAndCompleteDataAttribute(TDAI tdai, DaTypeName daTypeName) {
-        daTypeName.addDaiValues(tdai.getVal());
-        if (daTypeName.getFc() == TFCEnum.SG || daTypeName.getFc() == TFCEnum.SE) {
-            boolean isGroup = hasSgGroup(tdai);
-            if (isGroup) {
-                daTypeName.setValImport((!tdai.isSetValImport() || tdai.isValImport())
-                        // TODO && iedHasConfSG()
-                );
-            } else {
-                daTypeName.setValImport(false);
-                // TODO
-                log.warn("Inconsistency in the SCD file - DAI ?? with fc=?? must have a sGroup attribute");
-            }
-        } else if (tdai.isSetValImport()) {
-            daTypeName.setValImport(tdai.isValImport());
-        }
-    }
-
-    private boolean hasSgGroup(TDAI tdai) {
-        return tdai.getVal().stream().anyMatch(tVal -> tVal.isSetSGroup() && tVal.getSGroup() > 0);
-    }
-
-    // TODO
-    public boolean iedHasConfSG(TIED tied, TLDevice tlDevice) {
-        TAccessPoint accessPoint = tied.getAccessPoint().stream()
-                .filter(tAccessPoint ->
-                        (tAccessPoint.getServer() != null) &&
-                                tAccessPoint.getServer().getLDevice().stream()
-                                        .anyMatch(tlDevice1 -> tlDevice1.getInst().equals(tlDevice.getInst()))
-
-                )
-                .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException(
-                                String.format("LD (%s) is unknown in %s", tlDevice.getInst(), tlDevice.getLdName())
-                        )
-                );
-
-        TServices srv = accessPoint.getServices();
-        return srv != null && srv.getSettingGroups() != null && srv.getSettingGroups().getConfSG() != null;
-    }
-
 
     private Optional<TDAI> createDoiSdiDaiChainIfNotExists(TAnyLN tAnyLN, DoTypeName doTypeName, DaTypeName daTypeName) {
         LinkedList<String> structInstances = new LinkedList<>(doTypeName.getStructNames());
@@ -263,16 +175,34 @@ public class LnService implements LNEditor {
             TSDI firstSDI = findOrCreateSDIFromDOI(doi, structInstances.getFirst());
             TSDI lastSDI = findOrCreateSDIByStructName(firstSDI, structInstances);
             if(structInstances.size() == 1){
-                TDAI newDAI = new TDAI();
-                newDAI.setName(structInstances.getFirst());
-                lastSDI.getSDIOrDAI().add(newDAI);
-                return Optional.of(newDAI);
+              return lastSDI.getSDIOrDAI().stream()
+                      .filter(tUnNaming -> tUnNaming.getClass().equals(TDAI.class))
+                      .map(TDAI.class::cast)
+                      .filter(tdai -> tdai.getName().equals(structInstances.getFirst()))
+                      .peek(tdai -> {if(tdai.isSetValImport()) tdai.setValImport(daTypeName.isValImport());})
+                      .findFirst()
+                      .map(Optional::of)
+                      .orElseGet(() -> {
+                          TDAI newDAI = new TDAI();
+                          newDAI.setName(structInstances.getFirst());
+                          lastSDI.getSDIOrDAI().add(newDAI);
+                          return Optional.of(newDAI);
+                      });
             }
         } else if(structInstances.size() == 1){
-            TDAI newDAI = new TDAI();
-            newDAI.setName(structInstances.getFirst());
-            doi.getSDIOrDAI().add(newDAI);
-            return Optional.of(newDAI);
+            return doi.getSDIOrDAI().stream()
+                    .filter(tUnNaming -> tUnNaming.getClass().equals(TDAI.class))
+                    .map(TDAI.class::cast)
+                    .filter(tdai -> tdai.getName().equals(structInstances.getFirst()))
+                    .peek(tdai -> {if(tdai.isSetValImport()) tdai.setValImport(daTypeName.isValImport());})
+                    .findFirst()
+                    .map(Optional::of)
+                    .orElseGet(() -> {
+                        TDAI newDAI = new TDAI();
+                        newDAI.setName(structInstances.getFirst());
+                        doi.getSDIOrDAI().add(newDAI);
+                        return Optional.of(newDAI);
+                    });
         }
         return Optional.empty();
     }
@@ -293,7 +223,7 @@ public class LnService implements LNEditor {
 
     private TSDI findOrCreateSDIFromDOI(TDOI doi, String sdiName) {
         return doi.getSDIOrDAI().stream()
-                .filter(sdi -> sdi.getClass().equals(TSDI.class))
+                .filter(tsdi -> tsdi.getClass().equals(TSDI.class))
                 .map(TSDI.class::cast)
                 .filter(tsdi -> tsdi.getName().equals(sdiName))
                 .findFirst()
