@@ -119,11 +119,12 @@ public class SclElementsProviderService implements SclElementsProvider {
 
     private final BiPredicate<TAnyLN, DataAttributeRef> tAnyLNPredicate = (anyLN, dataRef) ->
             StringUtils.isBlank(dataRef.getLnClass())
-                    || (dataRef.getLnClass().equals(TLLN0Enum.LLN_0.value()) && (anyLN instanceof TLN0))
+                    || anyLN instanceof TLN0
+                    && dataRef.getLnClass() != null && dataRef.getLnClass().equals(TLLN0Enum.LLN_0.value())
                     || anyLN instanceof TLN ln
-                    && Utils.lnClassEquals(ln.getLnClass(), dataRef.getLnClass())
+                    && (Utils.lnClassEquals(ln.getLnClass(), dataRef.getLnClass())
                     && ln.getInst().equals(dataRef.getLnInst())
-                    && Utils.equalsOrBothBlank(dataRef.getPrefix(), ln.getPrefix());
+                    && Utils.equalsOrBothBlank(dataRef.getPrefix(), ln.getPrefix()));
 
     @Override
     public Set<EnumValDTO> getEnumTypeValues(SCL scd, String idEnum) throws ScdException {

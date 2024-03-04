@@ -9,6 +9,7 @@ import org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 import org.lfenergy.compas.sct.commons.exception.ScdException;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface DataTypeTemplateReader {
@@ -19,6 +20,6 @@ public interface DataTypeTemplateReader {
 
     Stream<DataAttributeRef> getFilteredDataObjectsAndDataAttributes(TDataTypeTemplates dtt, TAnyLN anyLn, DataAttributeRef filter);
 
-    DataAttributeRef findDataObjectsAndDataAttributesByDataReference(TDataTypeTemplates dtt, String lNodeTypeId, String dataAttributeRef) throws ScdException;
+    Optional<DataAttributeRef> findDataObjectsAndDataAttributesByDataReference(TDataTypeTemplates dtt, String lNodeTypeId, String dataAttributeRef) throws ScdException;
 
 }

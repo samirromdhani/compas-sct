@@ -39,6 +39,22 @@ public class LdeviceService {
         return getFilteredLdevices(tied, ldevicePredicate).findFirst();
     }
 
+    public Stream<TLDevice> findFilteredLDevice(SCL scl, Predicate<TLDevice> ldevicePredicate) {
+     return scl.getIED()
+                .stream()
+                .flatMap(tied -> {
+                    if (!tied.isSetAccessPoint()) return Stream.empty();
+                    return tied.getAccessPoint()
+                            .stream()
+                            .map(TAccessPoint::getServer)
+                            .filter(Objects::nonNull)
+                            .filter(TServer::isSetLDevice)
+                            .flatMap(tServer -> tServer.getLDevice().stream()
+                                    .filter(ldevicePredicate));
+                });
+
+    }
+
     public Optional<ActiveStatus> getLdeviceStatus(TLDevice tlDevice) {
         LnService lnService = new LnService();
         return lnService.getDaiModStval(tlDevice.getLN0());

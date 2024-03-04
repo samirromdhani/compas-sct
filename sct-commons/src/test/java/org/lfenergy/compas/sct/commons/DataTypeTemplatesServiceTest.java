@@ -13,6 +13,7 @@ import org.lfenergy.compas.sct.commons.dto.SclReportItem;
 import org.lfenergy.compas.sct.commons.testhelpers.SclTestMarshaller;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -146,22 +147,24 @@ class DataTypeTemplatesServiceTest {
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
         String dataRef = "Do.sdo1.d.antRef.bda1.bda2.bda3";
-        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
+        Optional<DataAttributeRef> dataAttributeRef = dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
                 dtt, "LNO1", dataRef);
         // Then
         assertThatCode(() -> dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
                 dtt, "LNO1", dataRef))
                 .doesNotThrowAnyException();
 
-        assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do.sdo1.d");
-        assertThat(dataAttributeRefs.getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
-        assertThat(dataAttributeRefs).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
+        assertThat(dataAttributeRef).isPresent();
+
+        assertThat(dataAttributeRef.get().getDoRef()).isEqualTo("Do.sdo1.d");
+        assertThat(dataAttributeRef.get().getDaRef()).isEqualTo("antRef.bda1.bda2.bda3");
+        assertThat(dataAttributeRef.get()).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
                 .containsExactly("Do.sdo1.d", "antRef.bda1.bda2.bda3");
-        assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
-        assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
+        assertThat(dataAttributeRef.get().getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
+        assertThat(dataAttributeRef.get().getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
                 .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
-        assertThat(dataAttributeRefs.getDaName().isValImport()).isTrue();
-        assertThat(dataAttributeRefs.getDaName().isUpdatable()).isTrue();
+        assertThat(dataAttributeRef.get().getDaName().isValImport()).isTrue();
+        assertThat(dataAttributeRef.get().getDaName().isUpdatable()).isTrue();
     }
 
     @Test
@@ -170,19 +173,21 @@ class DataTypeTemplatesServiceTest {
         TDataTypeTemplates dtt = initDttFromFile(SCD_DTT_DO_SDO_DA_BDA);
         // When
         DataTypeTemplatesService dataTypeTemplatesService = new DataTypeTemplatesService();
-        DataAttributeRef dataAttributeRefs = dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
+        Optional<DataAttributeRef> dataAttributeRef = dataTypeTemplatesService.findDataObjectsAndDataAttributesByDataReference(
                 dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2");
         // Then
         assertThatCode(() -> dataTypeTemplatesService.isDataObjectsAndDataAttributesExists(
                 dtt, "LN1", "Do1.sdo1.sdo2.da2.bda1.bda2"))
                 .doesNotThrowAnyException();
 
-        assertThat(dataAttributeRefs.getDoRef()).isEqualTo("Do1.sdo1.sdo2");
-        assertThat(dataAttributeRefs.getDaRef()).isEqualTo("da2.bda1.bda2");
-        assertThat(dataAttributeRefs).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
+        assertThat(dataAttributeRef).isPresent();
+
+        assertThat(dataAttributeRef.get().getDoRef()).isEqualTo("Do1.sdo1.sdo2");
+        assertThat(dataAttributeRef.get().getDaRef()).isEqualTo("da2.bda1.bda2");
+        assertThat(dataAttributeRef.get()).extracting(DataAttributeRef::getDoRef, DataAttributeRef::getDaRef)
                 .containsExactly("Do1.sdo1.sdo2", "da2.bda1.bda2");
-        assertThat(dataAttributeRefs.getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
-        assertThat(dataAttributeRefs.getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
+        assertThat(dataAttributeRef.get().getDoName().getCdc()).isEqualTo(TPredefinedCDCEnum.WYE);
+        assertThat(dataAttributeRef.get().getDaName()).extracting(DaTypeName::getBType, DaTypeName::getFc)
                 .containsExactly(TPredefinedBasicTypeEnum.ENUM, TFCEnum.ST);
     }
 

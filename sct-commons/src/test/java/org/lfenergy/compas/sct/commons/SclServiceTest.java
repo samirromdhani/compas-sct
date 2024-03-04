@@ -293,16 +293,70 @@ class SclServiceTest {
     }
 
     @Test
-    @Tag("issue-321")
-    void updateDAI_should_not_throw_error() {
+    void updateDAI_should_throw_error_when_ied_not_found() {
         //Given
         DataAttributeRef dataAttributeRef = new DataAttributeRef();
-        dataAttributeRef.setLnType("unknownID");
         SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
         //When Then
-        assertThatThrownBy(() -> sclService.updateDAI(scd, "IED", "LD", dataAttributeRef))
-                .isInstanceOf(ScdException.class);
+        assertThatThrownBy(() -> sclService.updateDAI2(scd, "IED", "LD", dataAttributeRef))
+                .isInstanceOf(ScdException.class)
+                .hasMessage("IED.name 'IED' not found in SCD");
+    }
+
+    @Test
+    void updateDAI_should_throw_error_when_ldevice_not_found() {
         //Given
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        //When Then
+        assertThatThrownBy(() -> sclService.updateDAI2(scd, "IED_NAME", "LDINST", dataAttributeRef))
+                .isInstanceOf(ScdException.class)
+                .hasMessage("Unknown LDevice (LDINST) in IED (IED_NAME)");
+    }
+
+    @Test
+    void updateDAI_should_throw_error_when_lNodeType_not_found() {
+        //Given
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setLnType("unknownID");///LNO1
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        //When Then
+        assertThatThrownBy(() -> sclService.updateDAI2(scd, "IED_NAME", "LD_INS1", dataAttributeRef))
+                .isInstanceOf(ScdException.class)
+                .hasMessage("LN [lnType='unknownID', prefix='null', lnClass='null', inst='null'] not found in SCD");
+    }
+
+    @Test
+    void updateDAI_should_throw_error_when_lNodeType_not_match() {
+        //Given
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setLnType("LNO1");
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        //When Then
+        assertThatThrownBy(() -> sclService.updateDAI2(scd, "IED_NAME", "LD_INS1", dataAttributeRef))
+                .isInstanceOf(ScdException.class)
+                .hasMessage("LN [lnType='LNO1', prefix='null', lnClass='null', inst='null'] not found in SCD");
+    }
+
+    @Test
+    void updateDAI_should_throw_error_when_DataObjectRef_not_valid() {
+        //Given
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
+        dataAttributeRef.setLnType("LNO1");
+        dataAttributeRef.setLnClass(TLLN0Enum.LLN_0.value());
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        //When Then
+        assertThatThrownBy(() -> sclService.updateDAI2(scd, "IED_NAME", "LD_INS1", dataAttributeRef))
+                .isInstanceOf(ScdException.class)
+                .hasMessage("Invalid data reference .. At least DO name and DA name are required");
+    }
+
+
+    @Test
+    void updateDAI_should_not_throw_error() {
+        //Given
+        SCL scd = SclTestMarshaller.getSCLFromFile("/ied-test-schema-conf/ied_unit_test.xml");
+        DataAttributeRef dataAttributeRef = new DataAttributeRef();
         dataAttributeRef.setLnType("LNO1");
         dataAttributeRef.setLnClass(TLLN0Enum.LLN_0.value());
         DoTypeName doTypeName = new DoTypeName("Do.sdo1.d");
@@ -312,7 +366,7 @@ class SclServiceTest {
         tVal.setValue("newValue");
         dataAttributeRef.setDaiValues(List.of(tVal));
         //When Then
-        assertThatCode(() -> sclService.updateDAI(scd, "IED_NAME", "LD_INS1", dataAttributeRef))
+        assertThatCode(() -> sclService.updateDAI2(scd, "IED_NAME", "LD_INS1", dataAttributeRef))
                 .doesNotThrowAnyException();
         assertIsMarshallable(scd);
     }

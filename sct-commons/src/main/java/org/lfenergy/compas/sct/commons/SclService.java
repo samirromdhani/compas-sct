@@ -11,6 +11,7 @@ import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.api.SclEditor;
 import org.lfenergy.compas.sct.commons.dto.*;
 import org.lfenergy.compas.sct.commons.exception.ScdException;
+import org.lfenergy.compas.sct.commons.scl.ObjectReferenceService;
 import org.lfenergy.compas.sct.commons.scl.SclRootAdapter;
 import org.lfenergy.compas.sct.commons.scl.com.CommunicationAdapter;
 import org.lfenergy.compas.sct.commons.scl.com.ConnectedAPAdapter;
@@ -29,12 +30,25 @@ import org.lfenergy.compas.sct.commons.util.PrivateUtils;
 import org.lfenergy.compas.sct.commons.util.Utils;
 
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.stream.Stream;
 
 import static org.lfenergy.compas.sct.commons.util.CommonConstants.IED_TEST_NAME;
 import static org.lfenergy.compas.sct.commons.util.PrivateEnum.COMPAS_ICDHEADER;
 
 @Slf4j
 public class SclService implements SclEditor {
+
+    private static final String MESSAGE_IED_NAME_NOT_FOUND = "IED.name '%s' not found in SCD";
+    private static final String MESSAGE_LDEVICE_INST_NOT_FOUND = "Unknown LDevice (%s) in IED (%s)";
+    private static final String MESSAGE_LNODE_TYPE_NOT_FOUND = "LNodeType.id '%s' not found in DataTypeTemplates";
+    private static final String MESSAGE_LN_NOT_FOUND = "LN [lnType='%s', prefix='%s', lnClass='%s', inst='%s'] not found in SCD";
+
+    private final IedService iedService = new IedService();
+    private final LdeviceService ldeviceService = new LdeviceService();
+    private final DataTypeTemplatesService templatesService = new DataTypeTemplatesService();
+    private final LnodeTypeService lnodeTypeService = new LnodeTypeService();
+    private final LnService lnService = new LnService();
 
     @Override
     public SCL initScl(final UUID hId, final String hVersion, final String hRevision) throws ScdException {
@@ -152,8 +166,51 @@ public class SclService implements SclEditor {
         lnAdapter.updateDAI(dataAttributeRef);
         log.info(Utils.leaving(startTime));
     }
+    public void updateDAI2(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef) throws ScdException {
+        iedService.findIed(scd, tied -> tied.getName().equals(iedName))
+                .ifPresentOrElse(tied1 -> ldeviceService.findLdevice(tied1, tlDevice -> tlDevice.getInst().equals(ldInst))
+                        .ifPresentOrElse(tlDevice ->
+                                Stream.concat(tlDevice.getLN().stream(), Stream.of(tlDevice.getLN0()))
+                                        .filter(anyLN -> tAnyLNPredicate.test(anyLN, dataAttributeRef))
+                                        .findFirst()
+                                        .ifPresentOrElse(anyLN -> lnodeTypeService.findLnodeType(scd.getDataTypeTemplates(), tlNodeType -> tlNodeType.getId().equals(anyLN.getLnType()))
+                                                        .ifPresentOrElse(tlNodeType -> templatesService.findDataObjectsAndDataAttributesByDataReference(scd.getDataTypeTemplates(), anyLN.getLnType(), dataAttributeRef.getDataAttributes())
+                                                                        .ifPresent(dataAttributeRef1 -> {
+                                                                            if (TPredefinedBasicTypeEnum.OBJ_REF == dataAttributeRef.getBType()) {
+                                                                                Long sGroup = dataAttributeRef.getDaName().getDaiValues().keySet().stream().findFirst().orElse(-1L);
+                                                                                String val = sGroup < 0 ? null : dataAttributeRef.getDaName().getDaiValues().get(sGroup);
+                                                                                if(!new ObjectReferenceService().isValidObjRefValue(scd, iedName, val)){
+                                                                                    throw new ScdException("Invalid ObjRef: " + val);
+                                                                                }
+                                                                            }
+                                                                            //TODO
+                                                                            if (TPredefinedCDCEnum.ING == dataAttributeRef.getCdc() || TPredefinedCDCEnum.ASG == dataAttributeRef.getCdc()) {
+//                                                                            DAITracker daiTracker = new DAITracker(lnAdapter, dataAttributeRef.getDoName(), dataAttributeRef.getDaName());
+//                                                                            daiTracker.validateBoundedDAI();
+                                                                            }
+                                                                            lnService.updateOrCreateDOAndDAInstances(anyLN, dataAttributeRef1);
+                                                                        }),
+                                                                ()-> {
+                                                            throw new ScdException(String.format(MESSAGE_LNODE_TYPE_NOT_FOUND, dataAttributeRef.getLnType()));
+                                                        }), ()-> {
+                                            throw new ScdException(String.format(MESSAGE_LN_NOT_FOUND, dataAttributeRef.getLnType(), dataAttributeRef.getPrefix(), dataAttributeRef.getLnClass(), dataAttributeRef.getLnInst()));
+                                        }),()-> {
+                            throw new ScdException(String.format(MESSAGE_LDEVICE_INST_NOT_FOUND, ldInst, iedName));
+                        }), ()-> {
+                    throw new ScdException(String.format(MESSAGE_IED_NAME_NOT_FOUND, iedName));
+                });
+    }
 
-    @Override
+    private final BiPredicate<TAnyLN, DataAttributeRef> tAnyLNPredicate = (anyLN, dataRef) ->
+            anyLN instanceof TLN0
+                    && dataRef.getLnClass() != null && dataRef.getLnClass().equals(TLLN0Enum.LLN_0.value())
+                    || anyLN instanceof TLN ln
+                    && (Utils.lnClassEquals(ln.getLnClass(), dataRef.getLnClass())
+                    && ln.getInst().equals(dataRef.getLnInst())
+                    && Utils.equalsOrBothBlank(dataRef.getPrefix(), ln.getPrefix()));
+
+
+        @Override
     public void importSTDElementsInSCD(SCL scd, List<SCL> stds) throws ScdException {
 
         //Check SCD and STD compatibilities

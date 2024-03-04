@@ -109,6 +109,7 @@ public interface SclEditor {
      *                      DataTypeTemplate. Which should normally not happens.
      */
     void updateDAI(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef) throws ScdException;
+    void updateDAI2(SCL scd, String iedName, String ldInst, DataAttributeRef dataAttributeRef) throws ScdException;
 
     /**
      * Imports IEDs, DataTypeTemplates and Communication nodes of STD files into SCL (SCD) file

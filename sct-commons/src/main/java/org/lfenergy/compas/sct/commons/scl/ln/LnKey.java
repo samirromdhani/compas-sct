@@ -34,6 +34,39 @@ public class LnKey {
         this.prefix = tln.getPrefix();
     }
 
+    public LnKey(TAnyLN anyLN) {
+        this.lnType = anyLN.getLnType();
+        if(anyLN instanceof LN0 ln0) {
+            this.inst = ln0.getInst();
+            this.lnClass = ln0.getLnClass().get(0);
+            this.prefix = StringUtils.EMPTY;
+        } else {
+            this.inst = ((TLN)anyLN).getInst();
+            this.lnClass = ((TLN)anyLN).getLnClass().get(0);
+            this.prefix = ((TLN)anyLN).getPrefix();
+        }
+    }
+
+    public static DataAttributeRef createDataRef(TAnyLN anyLN) {
+        DataAttributeRef attributeRef = new DataAttributeRef();
+        if(anyLN instanceof TLN0 ln0){
+            if(ln0.isSetLnType()) attributeRef.setLnType(ln0.getLnType());
+            if(ln0.isSetInst()) attributeRef.setLnInst(ln0.getInst());
+            if(ln0.isSetLnClass()) attributeRef.setLnClass(ln0.getLnClass().get(0));
+            attributeRef.setPrefix("");
+        } else {
+            if(((TLN)anyLN).isSetLnType()) attributeRef.setLnType(((TLN)anyLN).getLnType());
+            if(((TLN)anyLN).isSetInst()) attributeRef.setLnInst(((TLN)anyLN).getInst());
+            if(((TLN)anyLN).isSetLnClass()) attributeRef.setLnClass(((TLN)anyLN).getLnClass().get(0));
+            if(((TLN)anyLN).isSetPrefix()) {
+                attributeRef.setPrefix(((TLN)anyLN).getPrefix());
+            } else  {
+                attributeRef.setPrefix(StringUtils.EMPTY);
+            }
+        }
+        return attributeRef;
+    }
+
     public static DataAttributeRef updateDataRef(TAnyLN anyLN, DataAttributeRef dataAttributeRef) {
         DataAttributeRef filter = DataAttributeRef.copyFrom(dataAttributeRef);
         if(anyLN instanceof TLN0 ln0){
@@ -52,6 +85,16 @@ public class LnKey {
             }
         }
         return filter;
+    }
+
+    public String getLNodeName() {
+        StringBuilder stringBuilder = new StringBuilder();
+        if (TLLN0Enum.LLN_0.value().equals(getLnClass())) {
+            stringBuilder.append(TLLN0Enum.LLN_0.value());
+        } else {
+            stringBuilder.append(getPrefix()).append(getLnClass()).append(getInst());
+        }
+        return stringBuilder.toString();
     }
 
 }

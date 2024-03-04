@@ -13,7 +13,6 @@ import org.lfenergy.compas.sct.commons.dto.DoTypeName;
 import org.lfenergy.compas.sct.commons.util.ActiveStatus;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.lfenergy.compas.sct.commons.util.CommonConstants.MOD_DO_NAME;
@@ -113,9 +112,8 @@ public class LnService implements LNEditor {
                 .ifPresent(tdai -> {
                     Map<Long,String> daiValMap = dataAttributeRef.getDaName().getDaiValues();
                     if(daiValMap.isEmpty()) return;
-                    // Here it's a convention criteria to check if DAI had to have list of values in each-one there is a setting group
-                    // If 0 given as key that means sample value (without settings group) will be created/updated
-                    // for more details see DaTypeName#addDaiValues
+                    // Here it's a convention criteria to check if DAI had to have list of values: in each-one there is a setting group
+                    // If 0 given as key that means it is a sample value (without settings group) will be created or updated
                     if(daiValMap.keySet().stream().anyMatch(key -> key.equals(0L))){
                         String value = daiValMap.entrySet().stream().findFirst().get().getValue();
                         tdai.getVal().stream().findFirst()
@@ -152,8 +150,7 @@ public class LnService implements LNEditor {
                             dataRef.getDaName().setValImport((!tdai.isSetValImport() || tdai.isValImport()) && isIedHasConfSG);
                         } else {
                             dataRef.getDaName().setValImport(false);
-                            log.warn("Inconsistency in the SCD file - DAI= " +tdai.getName()
-                                    +" with fc= " +dataRef.getFc().value() +" must have a sGroup attribute");
+                            log.warn("Inconsistency in the SCD file - DAI= " +tdai.getName() +" with fc= " +dataRef.getFc().value() +" must have a sGroup attribute");
                         }
                     } else if (tdai.isSetValImport()) dataRef.getDaName().setValImport(tdai.isValImport());
                 });
