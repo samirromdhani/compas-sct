@@ -100,6 +100,18 @@ public class DataTypeTemplatesService implements DataTypeTemplateReader {
                         ));
     }
 
+    @Override
+    public Map<String, String> importDTT(String iedName, TDataTypeTemplates tDataTypeTemplates) {
+//        this.importEnumType(thisIEDName,rcvDttAdapter);
+
+//        this.importDAType(thisIEDName,rcvDttAdapter);
+
+//        this.importDOType(thisIEDName,rcvDttAdapter);
+
+        return lnodeTypeService.importLNodeType(iedName, tDataTypeTemplates);
+//        return importLNodeType(iedName,tDataTypeTemplates);
+    }
+
     private Optional<TDAType> getDATypeByDaName(TDataTypeTemplates dtt, TDOType tdoType, String daName) {
         return sdoOrDAService.findSDOOrDA(tdoType, TDA.class, tda -> tda.getName().equals(daName))
                 .flatMap(tda -> daTypeService.findDaType(dtt, tdaType -> tda.isSetType() && tdaType.getId().equals(tda.getType())));

@@ -8,6 +8,7 @@ import org.lfenergy.compas.scl2007b4.model.TAnyLN;
 import org.lfenergy.compas.scl2007b4.model.TDataTypeTemplates;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -20,5 +21,7 @@ public interface DataTypeTemplateReader {
     Stream<DataAttributeRef> getFilteredDOAndDA(TDataTypeTemplates dtt, TAnyLN anyLn, DataAttributeRef filter);
 
     Optional<DataAttributeRef> findDOAndDA(TDataTypeTemplates dtt, String lNodeTypeId, DataAttributeRef dataAttributeRef);
+
+     Map<String,String> importDTT(String iedName, TDataTypeTemplates tDataTypeTemplates);
 
 }
