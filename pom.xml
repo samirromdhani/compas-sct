@@ -122,6 +122,7 @@
         <module>sct-commons</module>
         <module>sct-coverage</module>
         <module>sct-app</module>
+        <module>scl_header</module>
     </modules>
 
     <build>
