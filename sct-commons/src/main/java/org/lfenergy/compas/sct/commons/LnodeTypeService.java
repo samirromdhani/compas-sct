@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 public class LnodeTypeService {
 
     private final DoTypeService doTypeService = new DoTypeService();
+    private final DoService doService = new DoService();
 
     public Stream<TLNodeType> getLnodeTypes(TDataTypeTemplates tDataTypeTemplates) {
         return tDataTypeTemplates.getLNodeType().stream();
@@ -59,7 +60,26 @@ public class LnodeTypeService {
                                         filter.getDoName().setCdc(tdoType.getCdc());
                                         return doTypeService.getAllSDOAndDA(dtt, tdoType, filter).stream();
                                     });
-                        }));
+                       }));
+    }
 
+
+    public Stream<DataAttributeRef> getFilteredDOAndDAV2(TDataTypeTemplates dtt, DataAttributeRef filter)  {
+        return findLnodeType(dtt, tlNodeType -> tlNodeType.getId().equals(filter.getLnType()))
+                .stream()
+                .flatMap(tlNodeType -> doService.getFilteredDos(tlNodeType, tdo -> !filter.isDoNameDefined()
+                                || filter.getDoName().getName().equals(tdo.getName()))
+                        .flatMap(tdo -> {
+                            DataAttributeRef dataAttributeRef = DataAttributeRef.copyFrom(filter);
+                            dataAttributeRef.setLnType(tlNodeType.getId());
+                            dataAttributeRef.getDoName().setName(tdo.getName());
+                            filter.getDoName().setName(tdo.getName());
+                            return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()))
+                                    .stream()
+                                    .flatMap(tdoType -> {
+                                        dataAttributeRef.getDoName().setCdc(tdoType.getCdc());
+                                        return doTypeService.getAllSDOAndDA(dtt, tdoType, dataAttributeRef).stream();
+                                    });
+                        }));
     }
 }

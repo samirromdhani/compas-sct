@@ -9,6 +9,7 @@ import org.lfenergy.compas.sct.commons.dto.DaTypeName;
 import org.lfenergy.compas.sct.commons.dto.DataAttributeRef;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -90,4 +91,88 @@ public class DoTypeService {
         if (daOrBda.isSetValImport()) daTypeName.setValImport(daOrBda.isValImport());
         if (daOrBda.isSetVal()) daTypeName.addDaiValues(daOrBda.getVal());
     }
+
+
+    public List<DataAttributeRef> getFilteredSDOAndDA(TDataTypeTemplates dtt, TDOType tdoType, DataAttributeRef filter) {
+        List<DataAttributeRef> result = new ArrayList<>();
+        System.out.println(" getSdoNames :: "+filter.getSdoNames());
+        // DA -> BDA -> BDA..
+        sdoOrDAService.getFilteredDAs(tdoType, tda -> (!filter.isDaNameDefined() || filter.getDaRef().contains(tda.getName())))
+                .forEach(tda -> {
+                    System.out.println(".getFilteredDAs() :: "+tda.getName());
+//                    if (excludedByFilter(filter, tda)) {
+//                        return;
+//                    }
+                    DataAttributeRef newDataObjectRef = DataAttributeRef.copyFrom(filter);
+                    newDataObjectRef.getDaName().setName(tda.getName());
+                    if(tda.isSetFc()) {
+                        newDataObjectRef.getDaName().setFc(tda.getFc());
+                    }
+
+                    // STRUCT type (BType=STRUCT) refer to BDA, otherwise it is DA
+                    if(tda.isSetType() && tda.isSetBType() && tda.getBType().equals(TPredefinedBasicTypeEnum.STRUCT)) {
+                        daTypeService.findDaType(dtt, tdaType -> tdaType.getId().equals(tda.getType()))
+                                .ifPresent(nextDaType -> result.addAll(getDataAttributesFromBDA(dtt, nextDaType, newDataObjectRef)));
+                    } else {
+                        updateDaNameFromDaOrBda(tda, newDataObjectRef.getDaName());
+                        result.add(newDataObjectRef);
+                    }
+                });
+//        // SDO -> SDO -> SDO..
+////        System.out.println("filter.getSdoNames() :: "+filter.getSdoNames());
+        sdoOrDAService.getFilteredSDOs(tdoType ,tsdo -> filter.getDoRef().contains(tsdo.getName()))
+                .forEach(tsdo -> findDoType(dtt, tdoType1 -> tsdo.isSetType() && tdoType1.getId().equals(tsdo.getType()))
+                        .ifPresent(nextDoType -> {
+                            System.out.println(" getDoRef:: "+filter.getDoRef());
+                            System.out.println("tsdo ADDED:: "+tsdo.getName());
+//                            if(!filter.getDoRef().endsWith(tsdo.getName())) {
+//                                return;
+//                            }
+//                            System.out.println("nextDoType filter.tsdo.getName()s() :: "+tsdo.getName());
+                            DataAttributeRef newDataAttributeRef = DataAttributeRef.copyFrom(filter);
+                            if(filter.getSdoNames().isEmpty() || !filter.getSdoNames().contains(tsdo.getName())) {
+                                System.out.println("tsdo ADDED:: "+tsdo.getName());
+                                newDataAttributeRef.addDoStructName(tsdo.getName());
+                                if(nextDoType.isSetCdc()) {
+                                    newDataAttributeRef.getDoName().setCdc(nextDoType.getCdc());
+                                }
+                            }
+                            result.addAll(getFilteredSDOAndDA(dtt, nextDoType, newDataAttributeRef));
+//                            sdoOrDAService.getFilteredDAs(nextDoType, tda -> !newDataAttributeRef.isDaNameDefined()
+//                                            || newDataAttributeRef.getDaRef().contains(tda.getName()))
+//                                    .forEach(tda -> {
+//                                        System.out.println(".getFilteredDAs() :: "+tda.getName());
+////                    }
+////                                        DataAttributeRef newDataObjectRef = DataAttributeRef.copyFrom(filter);
+//                                        newDataAttributeRef.getDaName().setName(tda.getName());
+//                                        if(tda.isSetFc()) {
+//                                            newDataAttributeRef.getDaName().setFc(tda.getFc());
+//                                        }
+//
+//                                        // STRUCT type (BType=STRUCT) refer to BDA, otherwise it is DA
+//                                        if(tda.isSetType() && tda.isSetBType() && tda.getBType().equals(TPredefinedBasicTypeEnum.STRUCT)) {
+//                                            daTypeService.findDaType(dtt, tdaType -> tdaType.getId().equals(tda.getType()))
+//                                                    .ifPresent(nextDaType -> result.addAll(getDataAttributesFromBDA(dtt, nextDaType, newDataAttributeRef)));
+//                                        } else {
+//                                            updateDaNameFromDaOrBda(tda, newDataAttributeRef.getDaName());
+//                                            result.add(newDataAttributeRef);
+//                                        }
+//                                    });
+                        }));
+        return result;
+    }
+
+    private boolean excludedByFilter(DataAttributeRef filter, TSDO tsdo) {
+        return filter != null &&
+                !filter.getSdoNames().isEmpty() &&
+                !filter.getSdoNames().contains(tsdo.getName());
+    }
+
+    private boolean excludedByFilter(DataAttributeRef filter, TDA da) {
+        return filter != null && filter.isDaNameDefined() &&
+                !filter.getDaName().getName().equals(da.getName());
+    }
+
+
+
 }
