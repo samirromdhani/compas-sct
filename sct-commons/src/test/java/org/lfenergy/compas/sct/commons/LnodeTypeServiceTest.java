@@ -4,7 +4,6 @@
 
 package org.lfenergy.compas.sct.commons;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.lfenergy.compas.scl2007b4.model.*;
 import org.lfenergy.compas.sct.commons.dto.DaTypeName;
@@ -87,14 +86,13 @@ class LnodeTypeServiceTest {
     }
 
     @Test
-    void getFilteredDOAndDA_should_return_expected_dataReference() {
+    void getAllDOAndDA_when_given_LNodeType_should_return_expected_allDataAttributeReference() {
         //Given
         TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml");
-        DataAttributeRef dataAttributeRef = new DataAttributeRef();
-        dataAttributeRef.setLnType("LNodeType0");
+        String lNodeTypeId = "LNodeType0";
         //When
         LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDA(dtt, dataAttributeRef).toList();
+        List<DataAttributeRef> result = lnodeTypeService.getAllDOAndDA(dtt, lNodeTypeId).toList();
         //Then
         assertThat(result).hasSize(9).extracting(
                         DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
@@ -122,19 +120,17 @@ class LnodeTypeServiceTest {
     }
 
     @Test
-    void getFilteredDOAndDA_should_return_all_dai() {
+    void getAllDOAndDA_should_return_all_dai() {
         // given
         SCL scd = SclTestMarshaller.getSCLFromFile("/scl-srv-import-ieds/ied_1_test.xml");
         TDataTypeTemplates dtt = scd.getDataTypeTemplates();
-        DataAttributeRef dataAttributeRef = new DataAttributeRef();
-        dataAttributeRef.setLnType("LN2");
+        String lNodeTypeId = "LN2";
         //When
         LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDA(dtt, dataAttributeRef).toList();
+        List<DataAttributeRef> result = lnodeTypeService.getAllDOAndDA(dtt, lNodeTypeId).toList();
         //Then
         assertThat(result).hasSize(1622);
     }
-
 
     @Test
     void getFilteredDOAndDA_when_givenDoName_should_return_expected_dataReference() {
@@ -147,7 +143,7 @@ class LnodeTypeServiceTest {
         dataAttributeRef.setDoName(doTypeName);
         //When
         LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDAV2(dtt, dataAttributeRef).toList();
+        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDA(dtt, dataAttributeRef).toList();
         //Then
         assertThat(result).hasSize(1).extracting(
                         DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
@@ -156,7 +152,6 @@ class LnodeTypeServiceTest {
     }
 
     @Test
-    @Disabled
     void getFilteredDOAndDA_when_givenDoNameAndSdoName_should_return_expected_dataReference() {
         //Given
         TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml");
@@ -164,24 +159,27 @@ class LnodeTypeServiceTest {
         dataAttributeRef.setLnType("LNodeType0");
         DoTypeName doTypeName = new DoTypeName();
         doTypeName.setName("FirstDoName");
-        doTypeName.addStructName("sdoName1");
+        doTypeName.setStructNames(List.of("sdoName1"));
         dataAttributeRef.setDoName(doTypeName);
         DaTypeName daTypeName = new DaTypeName();
         dataAttributeRef.setDaName(daTypeName);
         //When
         LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDAV2(dtt, dataAttributeRef).toList();
+        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDA(dtt, dataAttributeRef).toList();
         //Then
-        assertThat(result).hasSize(1).extracting(
+        assertThat(result).hasSize(3).extracting(
                         DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,
                         DataAttributeRef::getDaRef, DataAttributeRef::getBdaNames, DataAttributeRef::getBType, DataAttributeRef::getType)
-                .containsExactlyInAnyOrder(tuple("FirstDoName.sdoName1", List.of("sdoName1"),
-                                "sampleDaName21", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null));
+                .containsExactlyInAnyOrder(
+                        tuple("FirstDoName.sdoName1", List.of("sdoName1"),
+                                "sampleDaName21", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        tuple("FirstDoName.sdoName1.sdoName21", List.of("sdoName1", "sdoName21"),
+                                "sampleDaName31", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null),
+                        tuple("FirstDoName.sdoName1.sdoName21.sdoName31", List.of("sdoName1", "sdoName21", "sdoName31"),
+                                "sampleDaName41", List.of(), TPredefinedBasicTypeEnum.BOOLEAN, null));
     }
 
-
     @Test
-    @Disabled
     void getFilteredDOAndDA_when_givenDoNameAndSdoNames_should_return_expected_dataReference() {
         //Given
         TDataTypeTemplates dtt = initDttFromFile("/dtt-test-schema-conf/scd_dtt_do_sdo_da_bda_test.xml");
@@ -195,7 +193,7 @@ class LnodeTypeServiceTest {
         dataAttributeRef.setDaName(daTypeName);
         //When
         LnodeTypeService lnodeTypeService = new LnodeTypeService();
-        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDAV2(dtt, dataAttributeRef).toList();
+        List<DataAttributeRef> result = lnodeTypeService.getFilteredDOAndDA(dtt, dataAttributeRef).toList();
         //Then
         assertThat(result).hasSize(2).extracting(
                         DataAttributeRef::getDoRef, DataAttributeRef::getSdoNames,

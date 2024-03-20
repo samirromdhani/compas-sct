@@ -29,57 +29,51 @@ public class LnodeTypeService {
         return getFilteredLnodeTypes(tDataTypeTemplates, tlNodeTypePredicate).findFirst();
     }
 
-    public Stream<DataAttributeRef> getAllDOAndDA(TDataTypeTemplates dtt, TLNodeType tlNodeType, DataAttributeRef dataRef)  {
-        dataRef.setLnType(tlNodeType.getId());
-        if(tlNodeType.isSetLnClass() && !tlNodeType.getLnClass().isEmpty()) dataRef.setLnClass(tlNodeType.getLnClass().get(0));
-        return tlNodeType.getDO()
-                .stream()
-                .map(tdo -> {
-                    dataRef.getDoName().setName(tdo.getName());
-                    return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()));
-                })
-                .filter(Optional::isPresent)
-                .map(Optional::orElseThrow)
-                .flatMap(tdoType -> {
-                    dataRef.getDoName().setCdc(tdoType.getCdc());
-                    return doTypeService.getAllSDOAndDA(dtt, tdoType, dataRef).stream();
-                });
+    public Stream<DataAttributeRef> getAllDOAndDA(TDataTypeTemplates dtt, String tlNodeTypeId)  {
+        DataAttributeRef dataAttributeRef = new  DataAttributeRef();
+        dataAttributeRef.setLnType(tlNodeTypeId);
+        return findLnodeType(dtt, tlNodeType -> tlNodeType.getId().equals(tlNodeTypeId))
+                .map(tlNodeType -> {
+                   if(tlNodeType.isSetLnClass() && !tlNodeType.getLnClass().isEmpty()) {
+                       dataAttributeRef.setLnClass(tlNodeType.getLnClass().get(0));
+                   }
+                  return tlNodeType.getDO()
+                          .stream()
+                          .map(tdo -> {
+                              dataAttributeRef.getDoName().setName(tdo.getName());
+                              return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()));
+                          })
+                          .filter(Optional::isPresent)
+                          .map(Optional::orElseThrow)
+                          .flatMap(tdoType -> {
+                              dataAttributeRef.getDoName().setCdc(tdoType.getCdc());
+                              return doTypeService.getAllSDOAndDA(dtt, tdoType, dataAttributeRef).stream();
+                          });
+                }).orElseThrow();
     }
-
 
     public Stream<DataAttributeRef> getFilteredDOAndDA(TDataTypeTemplates dtt, DataAttributeRef filter)  {
        return findLnodeType(dtt, tlNodeType -> tlNodeType.getId().equals(filter.getLnType()))
                .stream()
-               .flatMap(tlNodeType -> tlNodeType.getDO()
-                        .stream()
-                        .flatMap(tdo -> {
-                            filter.getDoName().setName(tdo.getName());
-                            return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()))
-                                    .stream()
-                                    .flatMap(tdoType -> {
-                                        filter.getDoName().setCdc(tdoType.getCdc());
-                                        return doTypeService.getAllSDOAndDA(dtt, tdoType, filter).stream();
-                                    });
-                       }));
-    }
-
-
-    public Stream<DataAttributeRef> getFilteredDOAndDAV2(TDataTypeTemplates dtt, DataAttributeRef filter)  {
-        return findLnodeType(dtt, tlNodeType -> tlNodeType.getId().equals(filter.getLnType()))
-                .stream()
                 .flatMap(tlNodeType -> doService.getFilteredDos(tlNodeType, tdo -> !filter.isDoNameDefined()
                                 || filter.getDoName().getName().equals(tdo.getName()))
                         .flatMap(tdo -> {
-                            DataAttributeRef dataAttributeRef = DataAttributeRef.copyFrom(filter);
+                            DataAttributeRef dataAttributeRef = new DataAttributeRef();
+                            dataAttributeRef.setPrefix(filter.getPrefix());
+                            dataAttributeRef.setLnClass(filter.getLnClass());
+                            dataAttributeRef.setLnInst(filter.getLnInst());
                             dataAttributeRef.setLnType(tlNodeType.getId());
                             dataAttributeRef.getDoName().setName(tdo.getName());
-                            filter.getDoName().setName(tdo.getName());
                             return doTypeService.findDoType(dtt, tdoType -> tdoType.getId().equals(tdo.getType()))
                                     .stream()
                                     .flatMap(tdoType -> {
                                         dataAttributeRef.getDoName().setCdc(tdoType.getCdc());
-                                        return doTypeService.getAllSDOAndDA(dtt, tdoType, dataAttributeRef).stream();
+                                        return doTypeService.getAllSDOAndDA(dtt, tdoType, dataAttributeRef)
+                                                .stream()
+                                                .filter(dataAttributeRefToFilter -> dataAttributeRefToFilter.getDoRef().startsWith(filter.getDoRef())
+                                                        && dataAttributeRefToFilter.getDaRef().startsWith(filter.getDaRef()));
                                     });
                         }));
     }
+
 }
