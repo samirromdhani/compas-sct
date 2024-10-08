@@ -4,7 +4,13 @@
 
 name: Add issues and pull request to project boards
 
-on: [ issues, pull_request, pull_request_target ]
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_target:
+    types: [opened, reopened]
 
 jobs:
   github-actions-automate-projects:
@@ -13,31 +19,31 @@ jobs:
     if: ${{ (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') || (github.actor == 'dependabot[bot]' && github.event_name == 'pull_request_target') }}
     steps:
       - name: add-new-issues-to-repository-based-project-column
-        if: github.event_name == 'issues' && github.event.action == 'opened'
+        if: github.event_name == 'issues'
         uses: alex-page/github-project-automation-plus@v0.8.3
         with:
-          project: CoMPAS SCT Board
-          column: To do
-          repo-token: ${{ secrets.ORG_GITHUB_ACTION_SECRET }}
+          project: samirromdhani sct Board
+          column: Todo
+          repo-token: ${{ secrets.SCT_GITHUB_ACTION_SECRET }}
       - name: add-new-pull-request-to-repository-based-project-column
-        if: (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.action == 'opened'
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         uses: alex-page/github-project-automation-plus@v0.8.3
         with:
-          project: CoMPAS SCT Board
-          column: To do
-          repo-token: ${{ secrets.ORG_GITHUB_ACTION_SECRET }}
+          project: samirromdhani sct Board
+          column: Todo
+          repo-token: ${{ secrets.SCT_GITHUB_ACTION_SECRET }}
+          action: add
 
-      - name: add-new-issues-to-organization-based-project-column
-        if: github.event_name == 'issues' && github.event.action == 'opened'
-        uses: alex-page/github-project-automation-plus@v0.8.3
-        with:
-          project: CoMPAS Issues Overview Board
-          column: To do
-          repo-token: ${{ secrets.ORG_GITHUB_ACTION_SECRET }}
-      - name: add-new-pull-request-to-organization-based-project-column
-        if: (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.action == 'opened'
-        uses: alex-page/github-project-automation-plus@v0.8.3
-        with:
-          project: CoMPAS Pull Request Overview Board
-          column: To do
-          repo-token: ${{ secrets.ORG_GITHUB_ACTION_SECRET }}
+#      - name: add-new-issues-to-organization-based-project-column
+#        if: github.event_name == 'issues' && github.event.action == 'opened'
+#        uses: alex-page/github-project-automation-plus@v0.8.3
+#        with:
+#          project: CoMPAS Issues Overview Board
+#          column: To do
+#          repo-token: ${{ secrets.ORG_GITHUB_ACTION_SECRET }}
+#      - name: add-new-pull-request-to-organization-based-project-column
+#        if: (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.action == 'opened'
+#        uses: alex-page/github-project-automation-plus@v0.8.3
+#        with:
+#          project: CoMPAS Pull Request Overview Board
+#          column: To do
